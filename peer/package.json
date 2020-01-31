@@ -1,0 +1,18 @@
+{
+  "name": "peer",
+  "version": "1.0.0",
+  "description": "P2P File Sharing System peer program",
+  "main": "client.js",
+  "scripts": {
+    "start": "node -r esm client.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Florentin Bekier & Rémi Blaise",
+  "license": "ISC",
+  "dependencies": {
+    "esm": "^3.2.25",
+    "ip": "^1.1.5",
+    "promise-fs": "^2.1.1",
+    "uuid": "^3.4.0"
+  }
+}
