@@ -1,30 +1,60 @@
-import net from 'net'
 import fs from 'promise-fs'
-import cli from './cli'
+import { createInterface } from 'readline'
+import { search } from './interface'
+import { read } from './files'
 import { config } from './config'
 import { sendRegistry } from './files'
 
-console.log(`Peer ID: ${config.peerId}`)
+function start() {
+	// Register to the index server
+	sendRegistry()
 
-// Create shared directory if not exists
-if (!fs.existsSync(config.dirname)) {
-	fs.mkdirSync(config.dirname)
-	console.log(`Shared directory created at path ${config.dirname}`)
+	// Watch changes
+	fs.watch(config.dirname, sendRegistry)
+
+	// CLI
+	console.log('\n====== WELCOME TO P2P FILE SHARING SYSTEM ======')
+	showCLI()
 }
 
-// Register to the index server
-sendRegistry()
+function showCLI() {
+	console.log('\n1. See the list of local files')
+	console.log('2. Download file')
 
-// Watch changes
-fs.watch(config.dirname, sendRegistry)
+	const rl = createInterface({
+		input: process.stdin,
+		output: process.stdout
+	})
 
-// CLI
-console.log('\n====== WELCOME TO P2P FILE SHARING SYSTEM ======')
-cli.show()
+	rl.question('What do you want to do? ', answer => {
+		rl.close()
 
-// Server-side
-const server = net.createServer(socket => {
+		switch (answer) {
+			case '1':
+				console.log('\nList of local files:')
+				read()
+					.then(files => {
+						console.log(files.map(file => file.id + '\t' + file.name + '\t' + file.size).join('\n'))
+						showCLI()
+					})
+				break;
 
-})
+			case '2':
+				const rl2 = createInterface({
+					input: process.stdin,
+					output: process.stdout
+				})
+				rl2.question('File ID: ', answer => {
+					search(answer)
+					rl2.close()
+				})
+				break;
 
-server.listen(config.port)
+			default:
+				showCLI()
+				break;
+		}
+	})
+}
+
+export default { start }

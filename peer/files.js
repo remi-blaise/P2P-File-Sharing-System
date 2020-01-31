@@ -7,7 +7,7 @@ import { config } from './config'
 
 /**
  * Read files in shared directory
- * @returns Array of files with id, name and size
+ * @returns {Promise} Files with id, name and size
  */
 export async function read() {
 	// Read shared directory

@@ -2,9 +2,9 @@
   "name": "peer",
   "version": "1.0.0",
   "description": "P2P File Sharing System peer program",
-  "main": "client.js",
+  "main": "app.js",
   "scripts": {
-    "start": "node -r esm client.js",
+    "start": "node -r esm app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Florentin Bekier & Rémi Blaise",
