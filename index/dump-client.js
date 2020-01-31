@@ -1,15 +1,32 @@
 import net from 'net'
 import readline from 'readline'
 import process from 'process'
+import fs from 'fs'
 import { PORT } from './config'
+
+const CACHE = '.cache/dump-client'
 
 const stdin = readline.createInterface({
     input: process.stdin,
     output: process.stdout
 })
 
-stdin.question(`Type a message to send to the server:\n> `, (message) => {
+stdin.question(`Type a message to send to the server: [press Enter for last]\n> `, (message) => {
     stdin.close()
+
+    if (message) {
+        fs.writeFileSync(CACHE, message)
+    }
+    else {
+        try {
+            message = fs.readFileSync(CACHE)
+            console.log('Send: ' + message)
+        }
+        catch (exception) {
+            console.log("Can't read last line.")
+            return
+        }
+    }
 
     const socket = net.createConnection({ port: PORT }, () => {
         console.log('connected to server!')

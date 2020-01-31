@@ -2,11 +2,11 @@ import net from 'net'
 import { PORT } from '../config'
 import procedures from './procedures'
 
-function sendError(socket, message = "") {
-    console.log("An error occurred: " + message)
+function sendError(socket, exception = "") {
+    console.log("An error occurred:", exception)
     socket.write(JSON.stringify({
         status: 'error',
-        message
+        message: typeof exception === 'string' ? exception : "Server error."
     }))
     socket.destroy()
     console.log("Error response sent.")
@@ -22,7 +22,7 @@ function sendData(socket, data = null) {
 }
 
 const server = net.createServer(socket => {
-    socket.on('data', buffer => {
+    socket.on('data', async buffer => {
         console.log("Request incoming!")
         const message = buffer.toString()
 
@@ -35,7 +35,12 @@ const server = net.createServer(socket => {
 
         if (!(procedure.name in procedures)) return sendError(socket, "Wrong procedure name.")
 
-        const data = procedures[procedure.name](procedure.parameters)
+        try {
+            var data = await procedures[procedure.name](procedure.parameters)
+        }
+        catch (exception) {
+            return sendError(socket, exception)
+        }
 
         return sendData(socket, data)
     })
