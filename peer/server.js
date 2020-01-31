@@ -4,6 +4,7 @@ import path from 'path'
 import { config } from './config'
 import { read } from './files'
 
+// Create server
 const server = net.createServer(socket => {
 	socket.on('data', data => {
 		try {
@@ -12,8 +13,10 @@ const server = net.createServer(socket => {
 			// Identify retreive request
 			if (request.name == 'retrieve') {
 				read().then(files => {
+					// Find requested file
 					const file = files.find(file => file.id == request.parameters.fileId)
 					console.log(`File requested: ${file.id} (${file.name})`)
+					// Send requested file
 					const stream = fs.createReadStream(path.join(config.dirname, file.name))
 					stream.push(JSON.stringify({ status: 'success', data: { filename: file.name } })) // Send file name
 					stream.pipe(socket)
@@ -26,6 +29,9 @@ const server = net.createServer(socket => {
 	socket.on('error', err => console.error(`Server error: ${err.code}`))
 })
 
+/**
+ * Start peer server
+ */
 function start() {
 	server.listen(config.port)
 }

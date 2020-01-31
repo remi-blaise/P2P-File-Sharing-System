@@ -13,9 +13,11 @@ const SERVER_PORT = 8080
  * @returns {Promise} Server response
  */
 export function sendData(data) {
+	// Create connection
 	const client = new Socket()
 	client.connect(SERVER_PORT, SERVER_HOST)
 	client.on('error', err => console.error(`ERROR: Cannot connect to the server (${err.code})`))
+	// Send request
 	client.write(data, err => {
 		if (err) {
 			console.error(`ERROR: Failed to send data to the server (${err.code})`)
@@ -97,16 +99,19 @@ export function search(file) {
  * @param {number} port - Port of the peer
  */
 export function retrieve(file, host, port) {
-	var filename = null // Name of the file downloaded
+	// Create connection
 	const socket = new Socket()
 	socket.connect(port, host)
-	const request = { name: 'retrieve', parameters: { fileId: file } }
 	socket.on('error', err => console.error(err))
+	// Send request
+	const request = { name: 'retrieve', parameters: { fileId: file } }
 	socket.write(JSON.stringify(request), err => {
 		if (err) {
 			console.error(err)
 		}
 	})
+	// Get response
+	var filename = null // Name of the file downloaded
 	socket.on('data', data => {
 		// Retrieve file
 		try {

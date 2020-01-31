@@ -7,6 +7,6 @@ export const config = JSON.parse(fs.readFileSync(configFile).toString())
 
 // Retrieve or create peer ID
 if (config.peerId == undefined || config.peerId == '') {
-	config.peerId = uuid()
+	config.peerId = uuid() // Generate UUID
 	fs.writeFileSync(configFile, JSON.stringify(config, null, '\t'))
 }
