@@ -1,0 +1,10 @@
+{
+  "name": "index",
+  "scripts": {
+    "start": "node -r esm src/app.js",
+    "dump-client": "node -r esm dump-client.js"
+  },
+  "dependencies": {
+    "esm": "^3.2.25"
+  }
+}
