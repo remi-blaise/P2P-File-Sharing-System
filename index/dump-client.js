@@ -10,7 +10,6 @@ const stdin = readline.createInterface({
 
 stdin.question(`Type a message to send to the server:\n> `, (message) => {
     stdin.close()
-    console.log("\n")
 
     const socket = net.createConnection({ port: PORT }, () => {
         console.log('connected to server!')
