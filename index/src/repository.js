@@ -20,7 +20,7 @@ Peer.init({
         allowNull: false
     },
     port: {
-        type: Sequelize.STRING,
+        type: Sequelize.SMALLINT,
         allowNull: false
     },
     files: {
@@ -44,7 +44,7 @@ export async function registerPeer(peer) {
 export async function retrieveFilePeers(fileId) {
     const peers = await Peer.findAll({ where: {
         files: {
-            [Op.like]: fileId,
+            [Op.like]: '%' + fileId + '%',
         }
     } })
 

@@ -15,7 +15,7 @@ function registry(parameters) {
 
     if (typeof parameters.uuid !== 'string' || !isUUID(parameters.uuid)) throw "Bad uuid."
     if (typeof parameters.ip !== 'string' || !isIP(parameters.ip)) throw "Bad ip."
-    if (typeof parameters.port !== 'string' || !isPort(parameters.port)) throw "Bad port."
+    if (typeof parameters.port !== 'number' || !isPort(parameters.port.toString())) throw "Bad port."
     if (!Array.isArray(parameters.files)) throw "Files should be an array."
 
     parameters.files.forEach((hash, index) => {
