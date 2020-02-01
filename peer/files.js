@@ -6,6 +6,17 @@ import { registry } from './interface'
 import { config } from './config'
 
 /**
+ * Hash a file in SHA1
+ * @param {path} path - Path of the file to hash
+ * @returns {Promise} Hash of the file
+ */
+export function hashFile(path) {
+	return fs.readFile(path)
+		.then(data => crypto.createHash('sha1').update(data, 'utf8').digest('hex'))
+		.catch(err => console.error(`ERROR: Cannot read file '${pathfile}' (${err.code})`))
+}
+
+/**
  * Read files in shared directory
  * @returns {Promise} Files with id, name and size
  */
@@ -17,9 +28,7 @@ export async function read() {
 		const promises = files.map(async (file) => {
 			const pathfile = path.join(config.dirname, file)
 			// Read file to get hash
-			const hash = fs.readFile(pathfile)
-				.then(data => crypto.createHash('sha1').update(data, 'utf8').digest('hex'))
-				.catch(err => console.error(`ERROR: Cannot read file '${pathfile}' (${err.code})`))
+			const hash = hashFile(pathfile)
 			// Read stat to get size
 			const stat = fs.stat(pathfile)
 				.then(stats => stats.size)

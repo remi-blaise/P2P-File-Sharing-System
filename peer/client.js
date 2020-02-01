@@ -67,4 +67,4 @@ function showCLI() {
 	})
 }
 
-export default { start }
+export default { start, showCLI }

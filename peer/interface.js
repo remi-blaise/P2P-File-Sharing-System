@@ -1,21 +1,19 @@
 import fs from 'promise-fs'
 import path from 'path';
 import { Socket } from 'net'
+import client from './client'
+import { hashFile } from './files'
 import { config } from './config'
-
-// Constants
-const SERVER_HOST = '127.0.0.1'
-const SERVER_PORT = 8080
 
 /**
  * Send data to the index server
  * @param {string} data - Data to be send
  * @returns {Promise} Server response
  */
-export function sendData(data) {
+function sendData(data) {
 	// Create connection
 	const client = new Socket()
-	client.connect(SERVER_PORT, SERVER_HOST)
+	client.connect(config.serverPort, config.serverHost)
 	client.on('error', err => console.error(`ERROR: Cannot connect to the server (${err.code})`))
 	// Send request
 	client.write(data, err => {
@@ -75,7 +73,7 @@ export function search(file) {
 		.then(data => {
 			if (data.length > 0) {
 				console.log(`\nPeers found for file '${file}':`)
-				console.log(data.map(peer => peer.uuid + '\t' + peer.host).join('\n'))
+				console.log(data.map(peer => peer.id + '\t' + peer.ip).join('\n'))
 				console.log(`Total: ${data.length}`)
 				// Start download
 				const peer = data[0]
@@ -123,7 +121,16 @@ export function retrieve(file, host, port) {
 			// Raw data
 			const dest = fs.createWriteStream(path.join(config.dirname, filename))
 			dest.write(data)
-			console.log('File successfully downloaded')
+			console.log('File successfully downloaded!')
+			// Check that file has the same hash
+			hashFile(path.join(config.dirname, filename))
+				.then(hash => {
+					if (hash != file) {
+						console.error('ERROR: File downloaded corrupted')
+					}
+				})
+			// Show CLI
+			client.showCLI()
 		}
 	})
 }

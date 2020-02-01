@@ -1,5 +1,7 @@
 {
 	"port": 8090,
+	"serverHost": "127.0.0.1",
+	"serverPort": 8080,
 	"dirname": "share",
 	"peerId": "a298d070-43ef-11ea-8e7c-e133f16be805"
 }
