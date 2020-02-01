@@ -41,6 +41,7 @@ export async function read() {
 export function sendRegistry() {
 	read()
 		.then(files => {
-			registry(ip.address(), config.port, files)
+			const fileArray = files.map(file => file.id)
+			registry(ip.address(), config.port, fileArray)
 		})
 }

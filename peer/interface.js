@@ -51,10 +51,7 @@ export function sendData(data) {
  * Register the peer to the index server
  * @param {string} host - Hostname of the peer
  * @param {number} port - Port of the peer server
- * @param {Object[]} files - List of files of the peer
- * @param {string} files[].id - Hash of the file
- * @param {string} files[].name - Name of the file
- * @param {number} files[].size - Size of the file (in bytes)
+ * @param {string[]} files - Array of files hash of the peer
  */
 export function registry(host, port, files) {
 	// Format request as JSON
