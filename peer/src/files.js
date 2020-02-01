@@ -23,7 +23,8 @@ export function hashFile(path) {
 export async function read() {
 	// Read shared directory
 	try {
-		const files = await fs.readdir(config.dirname)
+		var files = await fs.readdir(config.dirname)
+		files = files.filter(file => !/\..*/.test(file)) // Exclude hidden files
 		// For each file, return an object with data to send
 		const promises = files.map(async (file) => {
 			const pathfile = path.join(config.dirname, file)
