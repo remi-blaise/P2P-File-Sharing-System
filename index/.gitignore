@@ -1,6 +1,3 @@
-config.js
-.pnp.js
-yarn.lock
+config.json
 node_modules
-.yarn
 *.sqlite

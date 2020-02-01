@@ -1,7 +1,18 @@
+/**
+ * app.js
+ *
+ * Entry point of the software, instanciate the server
+ *
+ * @author Rémi Blaise <hello@remi-blaise.com>
+ */
+
 import net from 'net'
-import { PORT } from '../config'
+import config from './config'
 import procedures from './procedures'
 
+/**
+ * Utility function, send an error through the socket and close the connection
+ */
 function sendError(socket, exception = "") {
     console.log("An error occurred:", exception)
     socket.write(JSON.stringify({
@@ -12,6 +23,9 @@ function sendError(socket, exception = "") {
     console.log("Error response sent.")
 }
 
+/**
+ * Utility function, send data through the socket and close the connection
+ */
 function sendData(socket, data = null) {
     socket.write(JSON.stringify({
         status: 'success',
@@ -21,10 +35,16 @@ function sendData(socket, data = null) {
     console.log("Response sent.")
 }
 
+// Create the server
 const server = net.createServer(socket => {
     socket.on('data', async buffer => {
         console.log("Request incoming!")
+
+        // 1. Retrieve the message received through the socket
+
         const message = buffer.toString()
+
+        // 2. Parse message
 
         try {
             var procedure = JSON.parse(message)
@@ -32,6 +52,8 @@ const server = net.createServer(socket => {
         catch (exception) {
             return sendError(socket, "Can't parse JSON.")
         }
+
+        // 3. Call the requested procedure
 
         if (!(procedure.name in procedures)) return sendError(socket, "Wrong procedure name.")
 
@@ -42,15 +64,19 @@ const server = net.createServer(socket => {
             return sendError(socket, exception)
         }
 
+        // 4. Reply through the socket
+
         return sendData(socket, data)
     })
 })
 
+// Handle errors
 server.on('error', err => {
     throw err
 })
 
-server.listen(PORT, () => {
+// Listen on the port
+server.listen(config.port, () => {
     console.log('Server is listening...')
 })
 

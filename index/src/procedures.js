@@ -1,3 +1,12 @@
+/**
+ * procedures.js
+ *
+ * Define the procedures of the provided API
+ * Here goes the business logic
+ *
+ * @author Rémi Blaise <hello@remi-blaise.com>
+ */
+
 import { isUUID, isPort, isIP, isHash } from 'validator'
 import { registerPeer, retrieveFilePeers } from './repository'
 
@@ -26,7 +35,7 @@ function registry(parameters) {
 
     registerPeer({
         // I select only data I want from the input
-        // in case a malicious person adds unwanted data
+        // in case a malicious person adds unwanted keys
         id: parameters.uuid,
         ip: parameters.ip,
         port: parameters.port,
