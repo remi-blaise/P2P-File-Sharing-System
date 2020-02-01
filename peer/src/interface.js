@@ -13,7 +13,7 @@ import { config } from './config'
 function sendData(data) {
 	// Create connection
 	const client = new Socket()
-	client.connect(config.serverPort, config.serverHost)
+	client.connect(config.indexPort, config.indexHost)
 	client.on('error', err => console.error(`ERROR: Cannot connect to the server (${err.code})`))
 	// Send request
 	client.write(data, err => {
