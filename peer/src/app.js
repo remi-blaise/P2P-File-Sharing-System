@@ -6,7 +6,7 @@ import { config } from './config'
 console.log(`Peer ID: ${config.peerId}`)
 console.log(`Listening port: ${config.port}`)
 
-// Create shared directory if not exists
+// Create shared directory if doesn't exist
 if (!fs.existsSync(config.dirname)) {
 	fs.mkdirSync(config.dirname)
 	console.log(`Shared directory created at path ${config.dirname}`)

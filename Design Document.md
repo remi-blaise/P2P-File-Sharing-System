@@ -46,7 +46,13 @@ Using the previously defined protocol, the Index provides the following API:
 ### The `registry` procedure
 
 Enable a peer to register as a *server* in the network, or to update its server information.
-Information of a server is made of its UUID (choosen by the server, uniquely identify the server Peer in the network), its contact address (IP and port) and its file list.
+Information of a server is made of:
+    - its UUID: choosen by the server, it uniquely identifies the server Peer in the network,
+    - its contact address (IP and port),
+    - its file list,
+    - the SHA-256 signature of the request certifying the identify of the peer,
+    - its public key which is required for a first registration, optional in later requests.
+
 Files are identified in the network by their SHA-1 hash.
 
 Expected request:
@@ -58,7 +64,9 @@ Expected request:
         "uuid": "string",
         "ip": "string",
         "port": "string",
-        "files": []
+        "files": [],
+        "signature": "string",
+        "publicKey": "string" // Required on first registry, optional later on
     }
 }
 ```
