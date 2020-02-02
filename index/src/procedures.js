@@ -45,8 +45,8 @@ function registry(parameters) {
 
     // 2. Verify the signature
 
-    const filename = config.keyStorageDir + '/' + parameters.uuid
-    let hasPublicKey = fs.existsSync(filename)
+    const filename = config.keyStorageDir + '/' + parameters.uuid + '.pem'
+    const hasPublicKey = fs.existsSync(filename)
     let publicKey
 
     if (hasPublicKey) {
@@ -65,8 +65,8 @@ function registry(parameters) {
 
     if (!verify.verify(publicKey, parameters.signature, 'hex')) throw "Invalid signature."
 
-    // If it's first registration, store the public key
-    if (!hasPublicKey) fs.writeFileSync(filename, publicKey)
+    // If given, store the public key
+    if (parameters.publicKey) fs.writeFileSync(filename, publicKey)
 
     // 3. Persist peer
 

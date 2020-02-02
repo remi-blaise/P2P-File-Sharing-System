@@ -1,9 +1,12 @@
 import fs from 'promise-fs'
-import path from 'path';
+import path from 'path'
 import { Socket } from 'net'
+import crypto from 'crypto'
 import client from './client'
 import { hashFile } from './files'
 import { config } from './config'
+
+const REGISTRY_CACHE_FILE = '.cache/lastPrivateKey.pem'
 
 /**
  * Send data to the index server
@@ -52,10 +55,34 @@ function sendData(data) {
  * @param {string[]} files - Array of files hash of the peer
  */
 export function registry(host, port, files) {
-	// Format request as JSON
+	// Format request
 	const request = { name: 'registry', parameters: { uuid: config.peerId, ip: host, port: port, files: files } }
+
+	// Sign the request
+    const publicKeyFilename = config.keyStorageDir + '/publicKey.pem'
+    const privateKeyFilename = config.keyStorageDir + '/privateKey.pem'
+
+    if (!fs.existsSync(publicKeyFilename) || !fs.existsSync(privateKeyFilename))
+    	console.error("One of your keys is missing, please execute `npm run generate-keys` to generate your keys")
+
+    const publicKey = fs.readFileSync('keys/publicKey.pem').toString()
+    const privateKey = fs.readFileSync('keys/privateKey.pem')
+    const isRegistered = fs.existsSync(REGISTRY_CACHE_FILE)
+    const lastKey = isRegistered && fs.readFileSync(REGISTRY_CACHE_FILE)
+
+    const sign = crypto.createSign('SHA256')
+	sign.write(JSON.stringify(request))
+	sign.end()
+	const signature = sign.sign(lastKey || privateKey, 'hex')
+
+	request.parameters.signature = signature
+	if (!isRegistered || privateKey !== lastKey) request.parameters.publicKey = publicKey
+
 	// Send request
 	sendData(JSON.stringify(request))
+		.then(() => {
+			if (!isRegistered) fs.writeFile(REGISTRY_CACHE_FILE, privateKey)
+		})
 		.catch(err => {
 			console.error(`ERROR: Registry request failed: ${err.message}`)
 		})

@@ -24,3 +24,7 @@ Be carefull specifying the same value for the `port` key of the index' `config.j
 ## Contributions
 
 See `CONTRIBUTIONS.md`.
+
+## Credits
+
+Implementation of the security fix #3 using the crypto module is inspired by [itsnuwan/digital-signature-for-document-signing](https://github.com/itsnuwan/digital-signature-for-document-signing), work of Nuwan Attanayake under the MIT license.

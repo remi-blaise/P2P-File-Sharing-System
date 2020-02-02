@@ -12,6 +12,12 @@ if (!fs.existsSync(config.dirname)) {
 	console.log(`Shared directory created at path ${config.dirname}`)
 }
 
+// Create key storage directory if doesn't exist
+if (!fs.existsSync(config.keyStorageDir)) {
+    fs.mkdirSync(config.keyStorageDir)
+    console.log(`Key storage directory created at path ${config.keyStorageDir}`)
+}
+
 // Client-side
 client.start()
 
