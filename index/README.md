@@ -15,6 +15,11 @@ Do at least once:
 1) Copy the configuration: `cp config.json.dist config.json`
 2) Edit the file: `nano config.js`
 
+Config keys:
+- `port`: the port is server will be listening on
+- `keyStorageDir`: directory where to store client public keys, requires write access
+- `devMode`: display the full content of the database after each request. Not recommended. (do not worry, the pretty display is still enabled)
+
 ## Start the software
 
 Run:

@@ -2,7 +2,7 @@
 
 ## Install dependencies
 
-First, you will to install the dependencies:
+First, you have to install the dependencies:
 
 ```bash
 npm install
@@ -14,6 +14,13 @@ Do at least once:
 
 1) Copy the configuration: `cp config.js.dist config.js`
 2) Edit the file: `vim config.js`
+
+Config keys:
+- `indexHost`: IP address of the index
+- `indexPort`: port of the index
+- `port`: port of the server-Peer
+- `dirname`: directory the peer will use to download and serve content
+- `keyStorageDir`: directory where to store signature keys
 
 ## Generate your keys
 
