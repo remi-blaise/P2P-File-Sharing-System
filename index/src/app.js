@@ -6,9 +6,16 @@
  * @author Rémi Blaise <hello@remi-blaise.com>
  */
 
+import fs from 'fs'
 import net from 'net'
 import config from './config'
 import procedures from './procedures'
+
+// Create keyStorageDir if doesn't exist
+if (!fs.existsSync(config.keyStorageDir)) {
+    fs.mkdirSync(config.keyStorageDir)
+    console.log(`Key storage directory created at path ${config.keyStorageDir}`)
+}
 
 /**
  * Utility function, send an error through the socket and close the connection

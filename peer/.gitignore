@@ -1,0 +1,6 @@
+node_modules/
+config.json
+share/*
+!share/file1
+!share/file2
+!share/file3

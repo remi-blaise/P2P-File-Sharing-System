@@ -5,6 +5,7 @@
   "main": "src/app.js",
   "scripts": {
     "start": "node -r esm src/app.js",
+    "generate-keys": "openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -pkeyopt rsa_keygen_pubexp:3 -out keys/privateKey.pem && openssl pkey -in keys/privateKey.pem -out keys/publicKey.pem -pubout",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Florentin Bekier & Rémi Blaise",

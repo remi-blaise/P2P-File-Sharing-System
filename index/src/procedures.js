@@ -8,12 +8,21 @@
  */
 
 import { isUUID, isPort, isIP, isHash } from 'validator'
+import crypto from 'crypto'
+import fs from 'fs'
+import config from './config'
 import { registerPeer, retrieveFilePeers } from './repository'
 
+// Utility function
 function checkForParameter(name, parameters) {
     if (!(name in parameters)) throw name + ' parameter is missing.'
 }
 
+/**
+ * The registry procedure
+ * @param {object} parameters
+ * @return {any} data
+ */
 function registry(parameters) {
     // 1. Validate parameters
 
@@ -21,17 +30,45 @@ function registry(parameters) {
     checkForParameter('ip', parameters)
     checkForParameter('port', parameters)
     checkForParameter('files', parameters)
+    checkForParameter('signature', parameters)
 
     if (typeof parameters.uuid !== 'string' || !isUUID(parameters.uuid)) throw "Bad uuid."
     if (typeof parameters.ip !== 'string' || !isIP(parameters.ip)) throw "Bad ip."
     if (typeof parameters.port !== 'number' || !isPort(parameters.port.toString())) throw "Bad port."
     if (!Array.isArray(parameters.files)) throw "Files should be an array."
+    if (typeof parameters.signature !== 'string') throw "Signature should be a string."
+    if (parameters.publicKey && typeof parameters.publicKey !== 'string') throw "Bad public key."
 
     parameters.files.forEach((hash, index) => {
         if (typeof hash !== 'string' || !isHash(hash, 'sha1')) throw 'file #' + index + "'s id is not a valid sha-1 hash."
     })
 
-    // 2. Persist peer
+    // 2. Verify the signature
+
+    const filename = config.keyStorageDir + '/' + parameters.uuid + '.pem'
+    const hasPublicKey = fs.existsSync(filename)
+    let publicKey
+
+    if (hasPublicKey) {
+        // If the public key exists, retrieve it
+        publicKey = fs.readFileSync(filename)
+    } else {
+        // Otherwise, require the public key to be given
+        if (!parameters.publicKey) throw "A public key should be given."
+        publicKey = parameters.publicKey
+    }
+
+    // Verify the signature
+    const verify = crypto.createVerify('SHA256')
+    verify.write(JSON.stringify( (({ uuid, ip, port, files }) => { return { name: 'registry', parameters: { uuid, ip, port, files } } })(parameters) ))
+    verify.end()
+
+    if (!verify.verify(publicKey, parameters.signature, 'hex')) throw "Invalid signature."
+
+    // If given, store the public key
+    if (parameters.publicKey) fs.writeFileSync(filename, publicKey)
+
+    // 3. Persist peer
 
     registerPeer({
         // I select only data I want from the input
@@ -43,6 +80,11 @@ function registry(parameters) {
     })
 }
 
+/**
+ * The search procedure
+ * @param {object} parameters
+ * @return {any} data
+ */
 function search(parameters) {
     // 1. Validate parameters
 
