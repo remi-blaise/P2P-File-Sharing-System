@@ -17,39 +17,47 @@ if (!fs.existsSync(config.keyStorageDir)) {
     console.log(`Key storage directory created at path ${config.keyStorageDir}`)
 }
 
+const RESET = '\x1b[0m'
+const BOLD = '\x1b[1m'
+const RED = '\x1b[31m'
+const GREEN = '\x1b[32m'
+const BLUE = '\x1b[33m'
+
+// Utility function
+function send(socket, response) {
+    socket.write(response)
+    socket.destroy()
+    console.log(`${BOLD}${GREEN}Response sent:${RESET}${BLUE}`, response, RESET)
+}
+
 /**
  * Utility function, send an error through the socket and close the connection
  */
 function sendError(socket, exception = "") {
-    console.log("An error occurred:", exception)
-    socket.write(JSON.stringify({
+    console.log(`${BOLD}${RED}An error occurred:`, exception, RESET)
+    send(socket, JSON.stringify({
         status: 'error',
         message: typeof exception === 'string' ? exception : "Server error."
     }))
-    socket.destroy()
-    console.log("Error response sent.")
 }
 
 /**
  * Utility function, send data through the socket and close the connection
  */
 function sendData(socket, data = null) {
-    socket.write(JSON.stringify({
+    send(socket, JSON.stringify({
         status: 'success',
         data
     }))
-    socket.destroy()
-    console.log("Response sent.")
 }
 
 // Create the server
 const server = net.createServer(socket => {
     socket.on('data', async buffer => {
-        console.log("Request incoming!")
-
         // 1. Retrieve the message received through the socket
 
         const message = buffer.toString()
+        console.log(`${BOLD}${GREEN}Request incoming!${RESET}${BLUE}`, message, RESET)
 
         // 2. Parse message
 
@@ -84,6 +92,6 @@ server.on('error', err => {
 
 // Listen on the port
 server.listen(config.port, () => {
-    console.log('Server is listening...')
+    console.log(`${BOLD}${GREEN}Server is listening...${RESET}`)
 })
 

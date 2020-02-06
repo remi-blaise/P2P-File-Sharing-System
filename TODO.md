@@ -7,7 +7,7 @@ Remi:
 [x] Inquire about using md files and program list.
 [x] Implement the new design of the protocol.
 [x] Randomize the peer lists.
-[ ] Enhance the CLI.
+[x] Enhance the CLI.
 
 Florentin:
 [ ] Implement the new design of the protocol.

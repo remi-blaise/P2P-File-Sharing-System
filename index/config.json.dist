@@ -2,5 +2,5 @@
     "port": 8080,
     "keyStorageDir": "keys",
     "enableSignatureChecks": true,
-    "logAllDatabase": false
+    "logAllDatabase": true
 }
