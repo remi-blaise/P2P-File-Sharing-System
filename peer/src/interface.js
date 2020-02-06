@@ -51,40 +51,45 @@ function sendData(data) {
  * @param {number} port - Port of the peer server
  * @param {object[]} files - File list of the peer
  */
-export function registry(host, port, files) {
+export async function registry(host, port, files) {
 	const publicKeyFilename = config.keyStorageDir + '/publicKey.pem'
 	const privateKeyFilename = config.keyStorageDir + '/privateKey.pem'
 	const registryCacheFilename = '.cache/lastPrivateKey.pem'
 	// Format request as JSON
 	const request = { name: 'registry', parameters: { uuid: config.peerId, ip: host, port: port, files: files } }
-	// Check if key files are present
-	if (!fs.existsSync(publicKeyFilename) || !fs.existsSync(privateKeyFilename)) {
+	// Read keys
+	try {
+		const publicKey = await fs.readFile(publicKeyFilename)
+		const privateKey = await fs.readFile(privateKeyFilename)
+		var lastKey = null
+		try {
+			lastKey = await fs.readFile(registryCacheFilename)
+		} catch (e) {
+			// Ignore error
+		}
+		const isRegistered = lastKey != null
+		// Sign request
+		const sign = crypto.createSign('SHA256')
+		sign.write(JSON.stringify(request))
+		sign.end()
+		const signature = sign.sign(lastKey || privateKey, 'hex')
+		request.parameters.signature = signature
+		if (!isRegistered || privateKey !== lastKey) {
+			request.parameters.publicKey = publicKey.toString()
+		}
+		// Send request
+		sendData(JSON.stringify(request))
+			.then(() => {
+				if (!isRegistered) {
+					fs.writeFile(registryCacheFilename, privateKey)
+				}
+			})
+			.catch(err => {
+				printError(`Registry request failed: ${err.message}`)
+			})
+	} catch (e) {
 		printError('One of your keys is missing, please execute `npm run generate-keys` to generate your keys', true)
 	}
-	// Read keys
-	const publicKey = fs.readFileSync(publicKeyFilename).toString()
-	const privateKey = fs.readFileSync(privateKeyFilename)
-	const isRegistered = fs.existsSync(registryCacheFilename)
-	const lastKey = isRegistered && fs.readFileSync(registryCacheFilename)
-	// Sign request
-	const sign = crypto.createSign('SHA256')
-	sign.write(JSON.stringify(request))
-	sign.end()
-	const signature = sign.sign(lastKey || privateKey, 'hex')
-	request.parameters.signature = signature
-	if (!isRegistered || privateKey !== lastKey) {
-		request.parameters.publicKey = publicKey
-	}
-	// Send request
-	sendData(JSON.stringify(request))
-		.then(() => {
-			if (!isRegistered) {
-				fs.writeFile(registryCacheFilename, privateKey)
-			}
-		})
-		.catch(err => {
-			printError(`Registry request failed: ${err.message}`)
-		})
 }
 
 /**
