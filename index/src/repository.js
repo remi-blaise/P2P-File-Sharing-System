@@ -102,7 +102,7 @@ export async function registerPeer(peer) {
  * @param {string} fileId - The file hash
  * @return {Promise<Peer[]>} peers - Found peers
  */
-export async function retrieveFilePeers(fileName) {
+export async function retrieveFiles(fileName) {
     // Search for peers
     const files = await File.findAll({ where: { name: fileName }, include: [ Peer ] })
 

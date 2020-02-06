@@ -6,7 +6,7 @@ Remi:
 [x] Design and implement security fix #3 by using the `crypto` module: https://github.com/itsnuwan/digital-signature-for-document-signing
 [x] Inquire about using md files and program list.
 [x] Implement the new design of the protocol.
-[ ] Randomize the peer lists.
+[x] Randomize the peer lists.
 [ ] Enhance the CLI.
 
 Florentin:

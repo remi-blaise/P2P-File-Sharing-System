@@ -11,11 +11,19 @@ import { isUUID, isPort, isIP, isHash, isInt } from 'validator'
 import crypto from 'crypto'
 import fs from 'fs'
 import config from './config'
-import { registerPeer, retrieveFilePeers } from './repository'
+import { registerPeer, retrieveFiles } from './repository'
 
 // Utility function
 function checkForParameter(name, parameters) {
     if (!(name in parameters)) throw name + ' parameter is missing.'
+}
+
+// Fisher-Yates from https://javascript.info/task/shuffle
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * (i + 1)) // random index from 0 to i
+        ;[array[i], array[j]] = [array[j], array[i]]
+    }
 }
 
 /**
@@ -23,7 +31,7 @@ function checkForParameter(name, parameters) {
  * @param {object} parameters
  * @return {any} data
  */
-function registry(parameters) {
+async function registry(parameters) {
     // 1. Validate parameters
 
     checkForParameter('uuid', parameters)
@@ -93,16 +101,21 @@ function registry(parameters) {
  * @param {object} parameters
  * @return {any} data
  */
-function search(parameters) {
+async function search(parameters) {
     // 1. Validate parameters
 
     checkForParameter('fileName', parameters)
-
     if (typeof parameters.fileName !== 'string') throw "fileName should be a string."
 
     // 2. Search for the file
 
-    return retrieveFilePeers(parameters.fileName)
+    const files = await retrieveFiles(parameters.fileName)
+
+    // 3. Randomize peer lists
+
+    files.forEach(file => shuffle(file.peers))
+
+    return files
 }
 
 export default {
