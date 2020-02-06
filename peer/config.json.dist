@@ -2,6 +2,6 @@
 	"indexHost": "127.0.0.1",
 	"indexPort": 8080,
 	"port": 8090,
-	"dirname": "share",
+	"sharedDir": "share",
     "keyStorageDir": "keys"
 }

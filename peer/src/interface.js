@@ -137,7 +137,7 @@ export function retrieve(file, host, port) {
 			} catch (e) {
 				// Raw data
 				emptyFile = false
-				const dest = fs.createWriteStream(path.join(config.dirname, filename))
+				const dest = fs.createWriteStream(path.join(config.sharedDir, filename))
 				dest.write(data)
 			}
 		})
@@ -145,7 +145,7 @@ export function retrieve(file, host, port) {
 			// We resolve the promise when the stream has ended
 			// If we downloaded an empty file, we need to create it here
 			if (emptyFile) {
-				fs.open(path.join(config.dirname, filename), 'w')
+				fs.open(path.join(config.sharedDir, filename), 'w')
 					.then(fd => {
 						fs.close(fd)
 						resolve()

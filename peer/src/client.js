@@ -16,7 +16,7 @@ function start() {
 	sendRegistry()
 
 	// Watch shared directory changes
-	fs.watch(config.dirname, sendRegistry)
+	fs.watch(config.sharedDir, sendRegistry)
 
 	// Show CLI
 	console.log(`\n${colors.BRIGHT}====== WELCOME TO P2P FILE SHARING SYSTEM ======${colors.RESET}`)
@@ -130,11 +130,11 @@ function searchFile() {
 								retrieve(file.hash, peer.ip, peer.port)
 									.then(() => {
 										// Check that file has the same hash
-										hashFile(path.join(config.dirname, filename))
+										hashFile(path.join(config.sharedDir, filename))
 											.then(hash => {
 												if (hash != file.hash) {
 													printError('File downloaded corrupted')
-													fs.unlink(path.join(config.dirname, filename))
+													fs.unlink(path.join(config.sharedDir, filename))
 												} else {
 													console.log(`${colors.BRIGHT}${colors.FG_GREEN}File successfully downloaded!${colors.RESET}`)
 												}

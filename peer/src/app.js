@@ -8,9 +8,9 @@ console.log(`${colors.DIM}Peer ID: ${config.peerId}${colors.RESET}`)
 console.log(`${colors.DIM}Listening port: ${config.port}${colors.RESET}`)
 
 // Create shared directory if doesn't exist
-if (!fs.existsSync(config.dirname)) {
-	fs.mkdirSync(config.dirname)
-	console.log(`Shared directory created at path ${config.dirname}`)
+if (!fs.existsSync(config.sharedDir)) {
+	fs.mkdirSync(config.sharedDir)
+	console.log(`Shared directory created at path ${config.sharedDir}`)
 }
 
 // Create key storage directory if doesn't exist

@@ -19,7 +19,7 @@ Config keys:
 - `indexHost`: IP address of the index
 - `indexPort`: port of the index
 - `port`: port of the server-Peer
-- `dirname`: directory the peer will use to download and serve content
+- `sharedDir`: directory the peer will use to download and serve content
 - `keyStorageDir`: directory where to store signature keys
 
 ## Generate your keys
