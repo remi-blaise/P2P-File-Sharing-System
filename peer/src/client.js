@@ -130,11 +130,11 @@ function searchFile() {
 								retrieve(file.hash, peer.ip, peer.port)
 									.then(() => {
 										// Check that file has the same hash
-										hashFile(path.join(config.sharedDir, filename))
+										hashFile(path.join(config.sharedDir, file.name))
 											.then(hash => {
 												if (hash != file.hash) {
 													printError('File downloaded corrupted')
-													fs.unlink(path.join(config.sharedDir, filename))
+													fs.unlink(path.join(config.sharedDir, file.name))
 												} else {
 													console.log(`${colors.BRIGHT}${colors.FG_GREEN}File successfully downloaded!${colors.RESET}`)
 												}
@@ -142,7 +142,7 @@ function searchFile() {
 												showCLI()
 											})
 											.catch(err => {
-												printError(`Cannot read file '${filename}' (${err.code})`)
+												printError(`Cannot read file '${file.name}' (${err.code})`)
 												// Back to menu
 												showCLI()
 											})
