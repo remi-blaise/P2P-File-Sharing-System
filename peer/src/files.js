@@ -4,6 +4,7 @@ import fs from 'promise-fs'
 import crypto from 'crypto'
 import { registry } from './interface'
 import { config } from './config'
+import { printError } from './client'
 
 /**
  * Hash a file in SHA1
@@ -13,7 +14,6 @@ import { config } from './config'
 export function hashFile(path) {
 	return fs.readFile(path)
 		.then(data => crypto.createHash('sha1').update(data, 'utf8').digest('hex'))
-		.catch(err => console.error(`ERROR: Cannot read file '${pathfile}' (${err.code})`))
 }
 
 /**
@@ -30,18 +30,19 @@ export async function read() {
 			const pathfile = path.join(config.dirname, file)
 			// Read file to get hash
 			const hash = hashFile(pathfile)
+				.catch(err => printError(`Cannot read file '${pathfile}' (${err.code})`))
 			// Read stat to get size
 			const stat = fs.stat(pathfile)
 				.then(stats => stats.size)
-				.catch(err => console.error(`ERROR: Cannot get stats of file '${pathfile}' (${err.code})`))
+				.catch(err => printError(`Cannot get stats of file '${pathfile}' (${err.code})`))
 			const results = await Promise.all([hash, stat])
-			return { id: results[0], name: file, size: results[1] }
+			return { hash: results[0], name: file, size: results[1] }
 		})
 
 		return Promise.all(promises)
 	}
 	catch (err) {
-		return console.error(`ERROR: Cannot read shared files (${err.code})`)
+		return printError(`Cannot read shared files (${err.code})`)
 	}
 }
 
@@ -51,7 +52,6 @@ export async function read() {
 export function sendRegistry() {
 	read()
 		.then(files => {
-			const fileArray = files.map(file => file.id)
-			registry(ip.address(), config.port, fileArray)
+			registry(ip.address(), config.port, files)
 		})
 }

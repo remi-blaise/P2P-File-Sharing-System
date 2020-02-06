@@ -10,7 +10,7 @@ Remi:
 [x] Enhance the CLI.
 
 Florentin:
-[ ] Implement the new design of the protocol.
+[x] Implement the new design of the protocol.
 [ ] Write the Verification Document (shows features and security)
 [ ] Write the Manual Document
 [ ] Write the Performance Result Document
