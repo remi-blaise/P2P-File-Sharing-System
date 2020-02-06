@@ -103,8 +103,11 @@ export async function registerPeer(peer) {
  * @return {Promise<Peer[]>} peers - Found peers
  */
 export async function retrieveFiles(fileName) {
-    // Search for peers
-    const files = await File.findAll({ where: { name: fileName }, include: [ Peer ] })
+    // Search for files
+    let files = await File.findAll({ where: { name: { [Op.like]: `%${fileName}%` } }, include: [ Peer ] })
+
+    // Remove unavailable files
+    files = files.filter(file => file.peers.length)
 
     // Return normalized data
     return files.map(({ id, hash, name, size, peers }) => {
