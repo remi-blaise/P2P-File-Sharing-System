@@ -7,7 +7,7 @@
  * @author Rémi Blaise <hello@remi-blaise.com>
  */
 
-import { isUUID, isPort, isIP, isHash } from 'validator'
+import { isUUID, isPort, isIP, isHash, isInt } from 'validator'
 import crypto from 'crypto'
 import fs from 'fs'
 import config from './config'
@@ -30,43 +30,51 @@ function registry(parameters) {
     checkForParameter('ip', parameters)
     checkForParameter('port', parameters)
     checkForParameter('files', parameters)
-    checkForParameter('signature', parameters)
+    if (config.enableSignatureChecks) checkForParameter('signature', parameters)
 
     if (typeof parameters.uuid !== 'string' || !isUUID(parameters.uuid)) throw "Bad uuid."
     if (typeof parameters.ip !== 'string' || !isIP(parameters.ip)) throw "Bad ip."
     if (typeof parameters.port !== 'number' || !isPort(parameters.port.toString())) throw "Bad port."
     if (!Array.isArray(parameters.files)) throw "Files should be an array."
-    if (typeof parameters.signature !== 'string') throw "Signature should be a string."
-    if (parameters.publicKey && typeof parameters.publicKey !== 'string') throw "Bad public key."
+    if (config.enableSignatureChecks && typeof parameters.signature !== 'string') throw "Signature should be a string."
+    if (config.enableSignatureChecks && parameters.publicKey && typeof parameters.publicKey !== 'string') throw "Bad public key."
 
-    parameters.files.forEach((hash, index) => {
-        if (typeof hash !== 'string' || !isHash(hash, 'sha1')) throw 'file #' + index + "'s id is not a valid sha-1 hash."
+    parameters.files.forEach((file, index) => {
+        if (typeof file !== 'object') throw 'file #' + index + " should be an object."
+        checkForParameter('hash', file)
+        checkForParameter('name', file)
+        checkForParameter('size', file)
+        if (typeof file.hash !== 'string' || !isHash(file.hash, 'sha1')) throw 'file #' + index + "'s hash is not a valid sha-1 hash."
+        if (typeof file.name !== 'string') throw 'file #' + index + "'s name should be a string."
+        if (typeof file.size !== 'number' || !isInt(file.size.toString())) throw 'file #' + index + "'s size should be an int in byte."
     })
 
     // 2. Verify the signature
 
-    const filename = config.keyStorageDir + '/' + parameters.uuid + '.pem'
-    const hasPublicKey = fs.existsSync(filename)
-    let publicKey
+    if (config.enableSignatureChecks) {
+        const filename = config.keyStorageDir + '/' + parameters.uuid + '.pem'
+        const hasPublicKey = fs.existsSync(filename)
+        let publicKey
 
-    if (hasPublicKey) {
-        // If the public key exists, retrieve it
-        publicKey = fs.readFileSync(filename)
-    } else {
-        // Otherwise, require the public key to be given
-        if (!parameters.publicKey) throw "A public key should be given."
-        publicKey = parameters.publicKey
+        if (hasPublicKey) {
+            // If the public key exists, retrieve it
+            publicKey = fs.readFileSync(filename)
+        } else {
+            // Otherwise, require the public key to be given
+            if (!parameters.publicKey) throw "A public key should be given."
+            publicKey = parameters.publicKey
+        }
+
+        // Verify the signature
+        const verify = crypto.createVerify('SHA256')
+        verify.write(JSON.stringify( (({ uuid, ip, port, files }) => { return { name: 'registry', parameters: { uuid, ip, port, files } } })(parameters) ))
+        verify.end()
+
+        if (!verify.verify(publicKey, parameters.signature, 'hex')) throw "Invalid signature."
+
+        // If given, store the public key
+        if (parameters.publicKey) fs.writeFileSync(filename, publicKey)
     }
-
-    // Verify the signature
-    const verify = crypto.createVerify('SHA256')
-    verify.write(JSON.stringify( (({ uuid, ip, port, files }) => { return { name: 'registry', parameters: { uuid, ip, port, files } } })(parameters) ))
-    verify.end()
-
-    if (!verify.verify(publicKey, parameters.signature, 'hex')) throw "Invalid signature."
-
-    // If given, store the public key
-    if (parameters.publicKey) fs.writeFileSync(filename, publicKey)
 
     // 3. Persist peer
 
@@ -76,7 +84,7 @@ function registry(parameters) {
         id: parameters.uuid,
         ip: parameters.ip,
         port: parameters.port,
-        files: parameters.files.join(',')
+        files: parameters.files.map(({ hash, name, size }) => { return { id: hash + '-' + name, hash, name, size } }),
     })
 }
 
@@ -88,13 +96,13 @@ function registry(parameters) {
 function search(parameters) {
     // 1. Validate parameters
 
-    checkForParameter('fileId', parameters)
+    checkForParameter('fileName', parameters)
 
-    if (typeof parameters.fileId !== 'string' || !isHash(parameters.fileId, 'sha1')) throw "fileId should be a valid sha-1 hash."
+    if (typeof parameters.fileName !== 'string') throw "fileName should be a string."
 
     // 2. Search for the file
 
-    return retrieveFilePeers(parameters.fileId)
+    return retrieveFilePeers(parameters.fileName)
 }
 
 export default {

@@ -2,7 +2,7 @@ import net from 'net'
 import readline from 'readline'
 import process from 'process'
 import fs from 'fs'
-import { PORT } from './config'
+import config from './src/config'
 
 const CACHE = '.cache/dump-client'
 
@@ -28,7 +28,7 @@ stdin.question(`Type a message to send to the server: [press Enter for last]\n> 
         }
     }
 
-    const socket = net.createConnection({ port: PORT }, () => {
+    const socket = net.createConnection({ port: config.port }, () => {
         console.log('connected to server!')
         socket.write(message)
         console.log('message sent')

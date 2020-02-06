@@ -23,6 +23,7 @@ const sequelize = new Sequelize({
 
 // Define models
 class Peer extends Model {}
+class File extends Model {}
 
 Peer.init({
     id: {
@@ -37,18 +38,42 @@ Peer.init({
     port: {
         type: Sequelize.SMALLINT,
         allowNull: false
-    },
-    files: {
-        type: Sequelize.STRING,
-        allowNull: false
     }
-}, { sequelize })
+}, { sequelize, modelName: 'peer' })
+
+File.init({
+    id: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        primaryKey: true
+    },
+    hash: {
+        type: Sequelize.STRING,
+        allowNull: false,
+    },
+    name: {
+        type: Sequelize.STRING,
+        allowNull: false,
+    },
+    size: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+    },
+}, { sequelize, modelName: 'file' })
+
+Peer.belongsToMany(File, { through: 'Peer_File' })
+File.belongsToMany(Peer, { through: 'Peer_File' })
+
+async function logAllDatabase() {
+    if (!config.logAllDatabase) return
+
+    const logList = modelName => list => console.log(modelName, list.map(({ dataValues }) => dataValues))
+    Peer.findAll({ include: [ File ] }).then(logList('Peers:'))
+    File.findAll({ include: [ Peer ] }).then(logList('Files:'))
+}
 
 // Start synchronization
-sequelize.sync().then(async () => {
-    // Print database content at start
-    if (config.devMode) Peer.findAll().then(console.log)
-})
+sequelize.sync().then(logAllDatabase)
 
 /**
  * Save a peer
@@ -60,10 +85,16 @@ export async function registerPeer(peer) {
     let entity = await Peer.findOne({ where: { id: peer.id } })
 
     // If exists, update, else, create
-    entity = entity ? await entity.update(peer) : await Peer.create(peer)
+    if (entity) {
+        await entity.update(peer)
+        const files = await Promise.all(peer.files.map(file => File.findOrCreate({ where: { id: file.id }, defaults: file })))
+        await entity.setFiles(files.flatMap(([ file, _ ]) => file))
+    } else {
+        await Peer.create(peer, { include: [ File ] })
+    }
 
     // Print new database content
-    if (config.devMode) Peer.findAll().then(console.log)
+    logAllDatabase()
 }
 
 /**
@@ -71,14 +102,12 @@ export async function registerPeer(peer) {
  * @param {string} fileId - The file hash
  * @return {Promise<Peer[]>} peers - Found peers
  */
-export async function retrieveFilePeers(fileId) {
+export async function retrieveFilePeers(fileName) {
     // Search for peers
-    const peers = await Peer.findAll({ where: {
-        files: {
-            [Op.like]: '%' + fileId + '%',
-        }
-    } })
+    const files = await File.findAll({ where: { name: fileName }, include: [ Peer ] })
 
     // Return normalized data
-    return peers.map(({ id, ip, port }) => { return { id, ip, port } })
+    return files.map(({ id, hash, name, size, peers }) => {
+        return { id, hash, name, size, peers: peers.map(({ id, ip, port }) => { return { id, ip, port } }) }
+    })
 }

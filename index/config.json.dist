@@ -1,5 +1,6 @@
 {
     "port": 8080,
     "keyStorageDir": "keys",
-    "devMode": false
+    "enableSignatureChecks": true,
+    "logAllDatabase": false
 }
