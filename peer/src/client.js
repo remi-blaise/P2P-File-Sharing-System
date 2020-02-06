@@ -103,11 +103,19 @@ function searchFile() {
 		// Search file on index server
 		search(filename)
 			.then(data => {
+				// Remove self from peers
+				for (let i = 0; i < data.length; i++) {
+					const file = data[i];
+					file.peers = file.peers.filter(peer => peer.id != config.peerId)
+				}
+				// Remove file if peers are empty
+				data = data.filter(file => file.peers.length > 0)
+
 				if (data.length > 0) {
 					console.log(`\nFiles corresponding to ${colors.BRIGHT}${colors.FG_CYAN}'${filename}'${colors.RESET}:\n`)
 					var i = 1
 					data.forEach(file => {
-						console.log(colors.BRIGHT + i + '. ' + colors.RESET + file.hash + ' (' + file.size + ' bytes) found on peers:')
+						console.log(colors.BRIGHT + i + '. ' + colors.RESET + file.name + ' (' + file.size + ' bytes) ' + colors.DIM + '(' + file.hash + ')' + colors.RESET + ' found on peers:')
 						console.log(file.peers.map(peer => ' - ' + peer.ip + colors.DIM + ' (' + peer.id + ')' + colors.RESET).join('\n'))
 						i++
 					})
