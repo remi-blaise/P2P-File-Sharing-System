@@ -1,0 +1,60 @@
+Peer ID: 2f70d1a0-4922-11ea-816a-f15f8534f811
+Listening port: 8090
+
+====== WELCOME TO P2P FILE SHARING SYSTEM ======
+
+1. See the list of local files
+2. Download a file
+3. Exit program
+What do you want to do? 1
+
+List of local files:
+2055	file1	f84083b46904fd782176d993857091aa14a0571c
+4109	file2	88d3f7c8565c27380e699e9d00038baddffd2774
+6163	file3	a0ed474f9aea1bdf3050c92e9704cf0faf68d84b
+8219	file4	75d58f7f06b84ee7046860106092fa5a64355be4
+10271	file5	5c09604e6727518861e5ac00b4fe834f85cb3ad9
+12327	file6	26cace83ed66acf0b4a040aff394bbfde8ba42a9
+14385	file7	05eb4feca70916e0ab14e5a94fb6c4b8f878851d
+16439	file8	e9252b127d8f5facbca55c1e540aeed96b1267b7
+18487	file9	222258951f936b27fc57c7cb5cd8860a31dee226
+
+1. See the list of local files
+2. Download a file
+3. Exit program
+What do you want to do? 2
+
+Name of the file: file10
+
+Files corresponding to 'file10':
+
+1. file10 (20025 bytes) (17489461f9628b7eb01e7393dbf21918e88f427d) found on peers:
+ - 104.194.117.168 (eec28cd0-4920-11ea-85f8-7b1b2a6f434f)
+
+Total: 1
+
+Which file do you want to download? 1
+
+Downloading... File successfully downloaded!
+
+1. See the list of local files
+2. Download a file
+3. Exit program
+What do you want to do? 1
+
+List of local files:
+2055	file1	f84083b46904fd782176d993857091aa14a0571c
+20025	file10	17489461f9628b7eb01e7393dbf21918e88f427d
+4109	file2	88d3f7c8565c27380e699e9d00038baddffd2774
+6163	file3	a0ed474f9aea1bdf3050c92e9704cf0faf68d84b
+8219	file4	75d58f7f06b84ee7046860106092fa5a64355be4
+10271	file5	5c09604e6727518861e5ac00b4fe834f85cb3ad9
+12327	file6	26cace83ed66acf0b4a040aff394bbfde8ba42a9
+14385	file7	05eb4feca70916e0ab14e5a94fb6c4b8f878851d
+16439	file8	e9252b127d8f5facbca55c1e540aeed96b1267b7
+18487	file9	222258951f936b27fc57c7cb5cd8860a31dee226
+
+1. See the list of local files
+2. Download a file
+3. Exit program
+What do you want to do? 3
