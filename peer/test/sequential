@@ -1,0 +1,16 @@
+#!/bin/bash
+
+TEMPLATE='2
+sequential
+1
+1
+'
+INPUT=''
+
+for (( i = 0; i < 500; i++ )); do
+    INPUT="$INPUT$TEMPLATE"
+done
+
+INPUT="${INPUT}3"
+
+time echo "$INPUT" | `which npm` start

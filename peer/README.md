@@ -37,3 +37,12 @@ Run:
 ```bash
 npm start
 ```
+
+## Testing
+
+You can find the testing scripts and run them after having started an index and an other peer:
+
+```bash
+# Run test of 500 sequential requests
+./test/sequential
+```

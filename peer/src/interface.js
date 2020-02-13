@@ -125,46 +125,37 @@ export function retrieve(file, host, port) {
 		}
 	})
 	// Get response
-	var filename = null // Name of the file downloaded
-	var emptyFile = true
+	let buffer = ''
 	return new Promise((resolve, reject) => {
 		socket.on('data', data => {
+			buffer += data.toString()
+		})
+		socket.on('end', () => {
+			const index = buffer.indexOf(';')
+			const header = buffer.substring(0, index)
+			const content = buffer.substring(index + 1)
+
 			// Retrieve file
 			try {
 				// Get filename
-				const response = JSON.parse(data.toString())
+				const response = JSON.parse(header)
+
 				if (response.status == 'success') {
-					filename = response.data.filename
+					var filename = response.data.filename
 				} else {
 					const err = new Error(response.message || 'Unkown error')
 					reject(err)
 				}
-			} catch (e) {
-				// Raw data
-				emptyFile = false
-				const dest = fs.createWriteStream(path.join(config.sharedDir, filename))
-				dest.write(data)
-			}
-		})
-		socket.on('end', () => {
-			// We resolve the promise when the stream has ended
-			// If we downloaded an empty file, we need to create it here
-			if (emptyFile) {
-				fs.open(path.join(config.sharedDir, filename), 'w')
-					.then(fd => {
-						fs.close(fd)
-						resolve()
-					})
-			} else {
-				resolve()
-			}
-		})
-		// Timeout if the response is too long
-		setTimeout(() => {
-			if (filename == null) {
-				const err = new Error('Response not recieved before timeout.')
+			} catch (err) {
 				reject(err)
 			}
-		}, 1000)
+
+			// Raw data
+			const dest = fs.createWriteStream(path.join(config.sharedDir, filename))
+			dest.write(content, () => {
+				socket.destroy()
+				resolve()
+			})
+		})
 	})
 }

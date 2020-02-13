@@ -24,8 +24,8 @@ const server = net.createServer(socket => {
 					} else {
 						console.log(`${colors.FG_MAGENTA}File requested: ${file.hash} (${colors.FG_CYAN}${file.name}${colors.FG_MAGENTA})${colors.RESET}`)
 						// Send requested file
+						socket.write(JSON.stringify({ status: 'success', data: { filename: file.name } }) + ';')
 						const stream = fs.createReadStream(path.join(config.sharedDir, file.name))
-						stream.push(JSON.stringify({ status: 'success', data: { filename: file.name } })) // Send file name
 						stream.pipe(socket)
 					}
 				})
