@@ -25,9 +25,10 @@ const BLUE = '\x1b[33m'
 
 // Utility function
 function send(socket, response) {
-    socket.write(response)
-    socket.destroy()
-    console.log(`${BOLD}${GREEN}Response sent:${RESET}${BLUE}`, response, RESET)
+    socket.write(response, () => {
+        socket.destroy()
+        console.log(`${BOLD}${GREEN}Response sent:${RESET}${BLUE}`, response, RESET)
+    })
 }
 
 /**
@@ -82,6 +83,12 @@ const server = net.createServer(socket => {
         // 4. Reply through the socket
 
         return sendData(socket, data)
+    })
+
+    // Handle socket errors
+    socket.on('error', exception => {
+        socket.destroy()
+        console.log(`${BOLD}${RED}Connection has been closed by the client:`, exception.message, RESET)
     })
 })
 
