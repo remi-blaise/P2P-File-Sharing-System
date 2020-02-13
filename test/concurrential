@@ -1,0 +1,66 @@
+#!/bin/bash
+
+if [ "$#" -ne 1 ]; then
+    echo "Please specify the number of processes as argument."
+    exit 1
+fi
+
+INPUT='2
+concurrential
+1
+3'
+
+N=$1
+PORT=9000
+
+rm -r tmp_peer*
+
+setup()
+{
+    for (( i = 0; i < $1; i++ )); do
+        cp -r peer tmp_peer$i
+        cd tmp_peer$i
+        pwd
+        rm -f share/*
+        PORT=$(( $PORT + 1 ))
+        echo "{\"indexHost\": \"127.0.0.1\",\"indexPort\": 8080,\"port\": $PORT,\"sharedDir\": \"share\",\"keyStorageDir\": \"keys\"}" > config.json
+        cd ..
+    done
+
+    wait
+}
+
+SECONDS=0
+
+run()
+{
+    for (( i = 0; i < $1; i++ )); do
+        cd tmp_peer$i
+        rm -f share/*
+        echo "$INPUT" | `which npm` start &
+        cd ..
+    done
+
+    wait
+}
+
+setup $N
+
+OUTPUT_FILE=test/concurrential_output.csv
+
+rm $OUTPUT_FILE
+
+for (( j = 25; j <= $N; j += 25 )); do
+    start=`date +%s%N`
+    run $j
+    end=`date +%s%N`
+    runtime=$((end-start))
+    echo "$j,$runtime" >> $OUTPUT_FILE
+
+    sleep 1
+done
+
+rm -r tmp_peer*
+
+echo
+cat $OUTPUT_FILE
