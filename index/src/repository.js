@@ -90,7 +90,10 @@ export async function registerPeer(peer) {
         const files = await Promise.all(peer.files.map(file => File.findOrCreate({ where: { id: file.id }, defaults: file })))
         await entity.setFiles(files.flatMap(([ file, _ ]) => file))
     } else {
-        await Peer.create(peer, { include: [ File ] })
+        const files$ = Promise.all(peer.files.map(file => File.findOrCreate({ where: { id: file.id }, defaults: file })))
+        const peer$ = Peer.create(peer)
+        const setting$ = entity.setFiles(files.flatMap(([ file, _ ]) => file))
+        await Promise.all([files$, peer$, setting$])
     }
 
     // Print new database content
