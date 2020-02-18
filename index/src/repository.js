@@ -80,21 +80,16 @@ sequelize.sync().then(logAllDatabase)
  * @param {Peer} peer - The peer
  * @return {Promise<null>}
  */
-export async function registerPeer(peer) {
-    // Check if the peer exists in the database
-    let entity = await Peer.findOne({ where: { id: peer.id } })
+export async function registerPeer(peerData) {
+    // Simultaneously retrieve or create the peer and the files
+    const peer$ = Peer.findOrCreate({ where: { id: peerData.id }, defaults: peerData })
+    const files$ = Promise.all(peerData.files.map(file => File.findOrCreate({ where: { id: file.id }, defaults: file })))
+    const [[peer, created], files] = await Promise.all([peer$, files$])
 
-    // If exists, update, else, create
-    if (entity) {
-        await entity.update(peer)
-        const files = await Promise.all(peer.files.map(file => File.findOrCreate({ where: { id: file.id }, defaults: file })))
-        await entity.setFiles(files.flatMap(([ file, _ ]) => file))
-    } else {
-        const files$ = Promise.all(peer.files.map(file => File.findOrCreate({ where: { id: file.id }, defaults: file })))
-        const peer$ = Peer.create(peer)
-        const setting$ = entity.setFiles(files.flatMap(([ file, _ ]) => file))
-        await Promise.all([files$, peer$, setting$])
-    }
+    // Simultaneously update the peer and the file list
+    const updatePeer$ = created ? Promise.resolve() : peer.update(peerData)
+    const updateFiles$ = peer.setFiles(files.flatMap(([ file, _ ]) => file))
+    await Promise.all([updatePeer$, updateFiles$])
 
     // Print new database content
     logAllDatabase()
