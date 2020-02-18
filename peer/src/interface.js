@@ -116,7 +116,6 @@ export function retrieve(file, host, port) {
 	// Create connection
 	const socket = new Socket()
 	socket.connect(port, host)
-	socket.on('error', err => printError(`Cannot connect to the peer (${err.code})`))
 	// Send request
 	const request = { name: 'retrieve', parameters: { fileId: file } }
 	socket.write(JSON.stringify(request), err => {
@@ -125,23 +124,29 @@ export function retrieve(file, host, port) {
 		}
 	})
 	// Get response
-	let buffer = ''
 	return new Promise((resolve, reject) => {
-		socket.on('data', data => {
-			buffer += data.toString()
+		let data = ''
+		socket.on('error', err => reject(new Error(`Cannot connect to the peer (${err.code})`)))
+		socket.on('data', chunk => {
+			data += chunk.toString()
 		})
 		socket.on('end', () => {
-			const index = buffer.indexOf(';')
-			const header = buffer.substring(0, index)
-			const content = buffer.substring(index + 1)
-
-			// Retrieve file
+			// Separate JSON response from file data stream
+			const separatorIndex = data.indexOf(';')
+			const header = data.substring(0, separatorIndex)
+			const content = data.substring(separatorIndex + 1)
+			// Read JSON response
 			try {
-				// Get filename
 				const response = JSON.parse(header)
 
 				if (response.status == 'success') {
-					var filename = response.data.filename
+					// Write content to file
+					const filename = response.data.filename
+					const dest = fs.createWriteStream(path.join(config.sharedDir, filename))
+					dest.write(content, () => {
+						socket.destroy()
+						resolve()
+					})
 				} else {
 					const err = new Error(response.message || 'Unkown error')
 					reject(err)
@@ -149,13 +154,6 @@ export function retrieve(file, host, port) {
 			} catch (err) {
 				reject(err)
 			}
-
-			// Raw data
-			const dest = fs.createWriteStream(path.join(config.sharedDir, filename))
-			dest.write(content, () => {
-				socket.destroy()
-				resolve()
-			})
 		})
 	})
 }

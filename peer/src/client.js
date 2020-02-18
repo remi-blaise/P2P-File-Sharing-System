@@ -152,38 +152,10 @@ async function searchFile() {
 		const answer = await ask('Which file do you want to download? ')
 
 		const fileIndex = parseInt(answer)
-		if (Number.isInteger(fileIndex)) {
-			const file = data[fileIndex - 1]
-			if (file != undefined) {
-				// Start download
-				const peer = file.peers[0]
-				process.stdout.write('\nDownloading... ')
-				retrieve(file.hash, peer.ip, peer.port)
-					.then(() => {
-						// Check that file has the same hash
-						hashFile(path.join(config.sharedDir, file.name))
-							.then(hash => {
-								if (hash != file.hash) {
-									printError('File downloaded corrupted')
-									fs.unlink(path.join(config.sharedDir, file.name))
-								} else {
-									console.log(`${colors.BRIGHT}${colors.FG_GREEN}File successfully downloaded!${colors.RESET}`)
-								}
-								// Back to menu
-								showCLI()
-							})
-							.catch(err => {
-								printError(`Cannot read file '${file.name}' (${err.code})`)
-								// Back to menu
-								showCLI()
-							})
-					})
-					.catch(err => {
-						printError(err.message)
-						// Back to menu
-						showCLI()
-					})
-			}
+		const file = data[fileIndex - 1]
+		if (file != undefined) {
+			// Start download
+			downloadFile(file)
 		} else {
 			console.log('\nNo valid index entered, back to main menu')
 			// Back to menu
@@ -191,6 +163,49 @@ async function searchFile() {
 		}
 	} else {
 		console.log(`\n${colors.BRIGHT}${colors.FG_YELLOW}No file named ${colors.FG_CYAN}'${filename}'${colors.FG_YELLOW} found.${colors.RESET}`)
+		// Back to menu
+		showCLI()
+	}
+}
+
+/**
+ * Attempt to download a file from peers
+ * @param {Object} file - File object
+ * @param {number} [i=0] - Index of the peer to try
+ */
+async function downloadFile(file, i = 0) {
+	if (i < file.peers.length) {
+		const peer = file.peers[i]
+		process.stdout.write(`\nDownloading from ${peer.ip}... `)
+
+		try {
+			await retrieve(file.hash, peer.ip, peer.port) 
+
+			// Check that file has the same hash
+			try {
+				const hash =  await hashFile(path.join(config.sharedDir, file.name))
+
+				if (hash != file.hash) {
+					printError('File downloaded corrupted')
+					fs.unlink(path.join(config.sharedDir, file.name))
+					// Try next peer
+					downloadFile(file, i + 1)
+				} else {
+					console.log(`${colors.BRIGHT}${colors.FG_GREEN}File successfully downloaded!${colors.RESET}`)
+					// Back to menu
+					showCLI()
+				}
+			} catch (err) {
+				printError(`Cannot read file '${file.name}' (${err.code})`)
+				// Back to menu
+				showCLI()
+			}
+		} catch (err) {
+			printError(err.message)
+			// Try next peer
+			downloadFile(file, i + 1)
+		}
+	} else {
 		// Back to menu
 		showCLI()
 	}
