@@ -86,14 +86,12 @@ async function registry(parameters) {
 
     // 3. Persist peer
 
-    registerPeer({
+    registerPeer(
         // I select only data I want from the input
         // in case a malicious person adds unwanted keys
-        id: parameters.uuid,
-        ip: parameters.ip,
-        port: parameters.port,
-        files: parameters.files.map(({ hash, name, size }) => { return { id: hash + '-' + name, hash, name, size } }),
-    })
+        { id: parameters.uuid, ip: parameters.ip, port: parameters.port },
+        parameters.files.map(({ hash, name, size }) => { return { id: hash + '-' + name, hash, name, size } })
+    )
 }
 
 /**

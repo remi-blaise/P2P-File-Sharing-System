@@ -80,16 +80,17 @@ sequelize.sync().then(logAllDatabase)
  * @param {Peer} peer - The peer
  * @return {Promise<null>}
  */
-export async function registerPeer(peerData) {
-    // Simultaneously retrieve or create the peer and the files
-    const peer$ = Peer.findOrCreate({ where: { id: peerData.id }, defaults: peerData })
-    const files$ = Promise.all(peerData.files.map(file => File.findOrCreate({ where: { id: file.id }, defaults: file })))
-    const [[peer, created], files] = await Promise.all([peer$, files$])
+export async function registerPeer(peerData, filesData) {
+    // Retrieve or create the peer and the files
+    const [peer, created] = await Peer.findOrCreate({ where: { id: peerData.id }, defaults: peerData })
+    const files = []
+    for (const file of filesData) {
+        files.push(await File.findOrCreate({ where: { id: file.id }, defaults: file }))
+    }
 
-    // Simultaneously update the peer and the file list
-    const updatePeer$ = created ? Promise.resolve() : peer.update(peerData)
-    const updateFiles$ = peer.setFiles(files.flatMap(([ file, _ ]) => file))
-    await Promise.all([updatePeer$, updateFiles$])
+    // Update the peer and the file list
+    if (created) await peer.update(peerData)
+    await peer.setFiles(files.flatMap(([ file, _ ]) => file))
 
     // Print new database content
     logAllDatabase()
