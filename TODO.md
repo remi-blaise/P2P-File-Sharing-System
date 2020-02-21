@@ -11,7 +11,7 @@ Remi:
 
 Florentin:
 [x] Implement the new design of the protocol.
-[ ] Write the Verification Document (shows features and security)
+[x] Write the Verification Document (shows features and security)
 [x] Write the Manual Document
-[ ] Write the Performance Result Document
+[x] Write the Performance Result Document
 [x] Commit the output file
