@@ -2,7 +2,7 @@ import fs from 'promise-fs'
 import path from 'path'
 import { Socket } from 'net'
 import crypto from 'crypto'
-import { config } from './config'
+import config from './config.json'
 import { printError } from './client'
 
 /**
@@ -52,14 +52,12 @@ function sendData(data) {
  * @param {object[]} files - File list of the peer
  */
 export async function registry(host, port, files) {
-	const publicKeyFilename = config.keyStorageDir + '/publicKey.pem'
 	const privateKeyFilename = config.keyStorageDir + '/privateKey.pem'
 	const registryCacheFilename = '.cache/lastPrivateKey.pem'
 	// Format request as JSON
-	const request = { name: 'registry', parameters: { uuid: config.peerId, ip: host, port: port, files: files } }
+	const request = { name: 'registry', parameters: { ip: host, port: port, files: files } }
 	// Read keys
 	try {
-		const publicKey = await fs.readFile(publicKeyFilename)
 		const privateKey = await fs.readFile(privateKeyFilename)
 		var lastKey = null
 		try {
@@ -74,9 +72,6 @@ export async function registry(host, port, files) {
 		sign.end()
 		const signature = sign.sign(lastKey || privateKey, 'hex')
 		request.parameters.signature = signature
-		if (!isRegistered || privateKey !== lastKey) {
-			request.parameters.publicKey = publicKey.toString()
-		}
 		// Send request
 		sendData(JSON.stringify(request))
 			.then(() => {
@@ -98,7 +93,7 @@ export async function registry(host, port, files) {
  */
 export function search(filename) {
 	// Format request as JSON
-	const request = { name: 'search', parameters: { fileName: filename } }
+	const request = { name: 'search', parameters: { ttl: config.ttl, fileName: filename } }
 	// Send request
 	return sendData(JSON.stringify(request))
 		.catch(err => {

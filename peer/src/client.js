@@ -3,9 +3,9 @@ import path from 'path'
 import { createInterface } from 'readline'
 import { search } from './interface'
 import { read, hashFile } from './files'
-import { config } from './config'
 import { sendRegistry } from './files'
 import { retrieve } from './interface'
+import config from './config.json'
 import colors from './colors'
 
 // Instanciate the command line interface reader

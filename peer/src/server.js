@@ -1,9 +1,9 @@
 import net from 'net'
 import fs from 'promise-fs'
 import path from 'path'
-import { config } from './config'
 import { read } from './files'
 import { printError } from './client'
+import config from './config.json'
 import colors from './colors'
 
 // Create server

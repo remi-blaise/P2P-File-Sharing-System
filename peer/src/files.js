@@ -2,8 +2,8 @@ import path from 'path'
 import ip from 'ip'
 import fs from 'promise-fs'
 import crypto from 'crypto'
+import config from './config.json'
 import { registry } from './interface'
-import { config } from './config'
 import { printError } from './client'
 
 /**
