@@ -23,26 +23,6 @@ Be carefull specifying the same value for the `port` key of the index' `config.j
 
 ## Testing
 
-You can find the sequential testing script in `peer/test` and run it after having started an index and an other peer:
-
-```bash
-# Run test of 500 sequential requests
-cd peer
-test/sequential
-```
-
-It works by using only one client requesting the same 10B file. See `peer/test/sequential_output.png` for the obtained response time.
-
-The concurrential file is locted directly in `test`. Make sure to first download `peer` dependencies and to generate keys and to have `index` and `peer` running.
-Then run it from the root:
-
-```bash
-test/concurrential 500
-```
-
-It works by first copying the `peer` folder as many times as we need clients, then making each client download a 1MB file from the very same Peer-server (located in `peer`) and save the response time. The response time is then saved in `test/concurrential_output.csv`. See `test/concurrential_output0.png` for the resulting graph.
-
-We can see that over 500 simultaneous requests, the time evolution is linear. It shows that the server-Peer can scale almost perfectly until at least 500 requests.
 
 ## Contributions
 
