@@ -68,7 +68,7 @@ export function registerPeer(peer, peerFiles) {
     // 3. If file is unknown: add it
     peerFiles
         .filter(file => !files.includesById(file))
-        .map(file => Object.assign({}, file, { peers: [peer] }))
+        .map(file => { return { ...file, peers: [peer] } })
         .forEach(file => files.push(file))
 
     logAllDatabase()
@@ -86,7 +86,7 @@ export function retrieveFiles(fileName) {
 
 /**
  * In-memory message list
- * 
+ *
  * Under the shape:
  * [
  *      {

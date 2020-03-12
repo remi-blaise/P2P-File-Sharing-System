@@ -11,19 +11,12 @@ import { isUUID, isPort, isIP, isHash, isInt } from 'validator'
 import crypto from 'crypto'
 import fs from 'fs'
 import config from './config'
-import { registerPeer, retrieveFiles } from './repository'
+import { registerPeer, logMessage, flushMessages } from './repository'
+import { localSearch, propagateSearch } from './search'
 
 // Utility function
 function checkForParameter(name, parameters) {
     if (!(name in parameters)) throw name + ' parameter is missing.'
-}
-
-// Fisher-Yates from https://javascript.info/task/shuffle
-function shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        let j = Math.floor(Math.random() * (i + 1)) // random index from 0 to i
-        ;[array[i], array[j]] = [array[j], array[i]]
-    }
 }
 
 /**
@@ -88,21 +81,33 @@ async function registry(parameters) {
  * @param {object} parameters
  * @return {any} data
  */
-async function search(parameters) {
+async function search(parameters, ip, port) {
     // 1. Validate parameters
 
+    checkForParameter('messageId', parameters)
+    checkForParameter('ttl', parameters)
     checkForParameter('fileName', parameters)
+    if (typeof parameters.messageId !== 'string') throw "messageId should be a string."
+    if (typeof parameters.ttl !== 'number') throw "ttl should be a number."
     if (typeof parameters.fileName !== 'string') throw "fileName should be a string."
 
-    // 2. Search for the file
+    // 2. Start local search
 
-    const files = await retrieveFiles(parameters.fileName)
+    localSearch(parameters.messageId, parameters.fileName, ip, port)
 
-    // 3. Randomize peer lists
+    // 3. Log the message
 
-    files.forEach(file => shuffle(file.peers))
+    logMessage(id, ip, port)
 
-    return files
+    // 4. Propagate request
+
+    if (parameters.ttl > 0) propagateSearch({ ...parameters, ttl: parameters.ttl - 1 })
+
+    // 5. Flush log
+
+    flushMessages()
+
+    return null
 }
 
 export default {

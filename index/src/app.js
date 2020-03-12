@@ -10,18 +10,13 @@ import fs from 'fs'
 import net from 'net'
 import config from './config'
 import procedures from './procedures'
+import { RESET, BOLD, RED, GREEN, BLUE } from './colors'
 
 // Create keyStorageDir if doesn't exist
 if (!fs.existsSync(config.keyStorageDir)) {
     fs.mkdirSync(config.keyStorageDir)
     console.log(`Key storage directory created at path ${config.keyStorageDir}`)
 }
-
-const RESET = '\x1b[0m'
-const BOLD = '\x1b[1m'
-const RED = '\x1b[31m'
-const GREEN = '\x1b[32m'
-const BLUE = '\x1b[33m'
 
 // Utility function
 function send(socket, response) {
@@ -74,7 +69,7 @@ const server = net.createServer(socket => {
         if (!(procedure.name in procedures)) return sendError(socket, "Wrong procedure name.")
 
         try {
-            var data = await procedures[procedure.name](procedure.parameters)
+            var data = await procedures[procedure.name](procedure.parameters, socket.remoteAddress, socket.remotePort)
         }
         catch (exception) {
             return sendError(socket, exception)
