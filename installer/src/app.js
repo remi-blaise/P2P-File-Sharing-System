@@ -1,4 +1,5 @@
 import fs from 'fs'
+import ip from 'ip'
 import path from 'path'
 import { promisify } from 'util'
 import { exec } from 'child_process'
@@ -8,6 +9,7 @@ import colors from '../../peer/src/colors'
 const TARGET_DIR = '../target'
 const SP_SRC_DIR = '../index'
 const LN_SRC_DIR = '../peer'
+const IP_ADDR = ip.address()
 
 async function createSuperPeers(number, leafNodes, topology) {
 	var superPeers = []
@@ -27,21 +29,28 @@ async function createSuperPeers(number, leafNodes, topology) {
 			await createLeafNode(`${i}${j}`, portCounter, superPeerPort)
 			// Copy public key to super-peer
 			fs.copyFileSync(path.join(TARGET_DIR, `leafnode${i}${j}`, 'keys', 'publicKey.pem'), path.join(superPeerPath, 'keys', `${j}.pem`))
-			peers.push({ ip: '127.0.0.1', port: portCounter })
+			peers.push({ ip: IP_ADDR, port: portCounter })
 			console.log(`${colors.BRIGHT}${colors.FG_GREEN}Done!${colors.RESET}`)
 		}
 
-		superPeers.push({ ip: '127.0.0.1', port: superPeerPort })
+		superPeers.push({ ip: IP_ADDR, port: superPeerPort })
 
 		// Edit config
+		process.stdout.write('Configuring... ')
 		let config = JSON.parse(fs.readFileSync(path.join(superPeerPath, 'config.json.dist')))
 		config.port = superPeerPort
 		config.leafNodes = peers
 		fs.writeFileSync(path.join(superPeerPath, 'config.json'), JSON.stringify(config, null, '\t'))
 
+		// Install dependencies
+		process.stdout.write('Installing dependencies... ')
+		await promisify(exec)(`cd ${superPeerPath} && npm install`)
+		console.log(`${colors.BRIGHT}${colors.FG_GREEN}Done!${colors.RESET}`)
+
 		portCounter++
 	}
 
+	process.stdout.write(`\n${colors.BRIGHT}Setting up network topology...${colors.RESET} `)
 	for (let i = 0; i < number; i++) {
 		// Edit config
 		const configPath = path.join(TARGET_DIR, `superpeer${i}`, 'config.json')
@@ -63,6 +72,7 @@ async function createSuperPeers(number, leafNodes, topology) {
 		config.neighbors = neighbors
 		fs.writeFileSync(configPath, JSON.stringify(config, null, '\t'))
 	}
+	console.log(`${colors.BRIGHT}${colors.FG_GREEN}Done!${colors.RESET}`)
 }
 
 async function createLeafNode(index, port, superPeerPort) {
@@ -70,8 +80,8 @@ async function createLeafNode(index, port, superPeerPort) {
 
 	copyFolderRecursive(LN_SRC_DIR, leafNodePath)
 
-	process.stdout.write('Configuring... ')
 	// Edit config
+	process.stdout.write('Configuring... ')
 	let config = JSON.parse(fs.readFileSync(path.join(leafNodePath, 'config.json.dist')))
 	config.indexHost = '127.0.0.1'
 	config.indexPort = superPeerPort
@@ -81,6 +91,10 @@ async function createLeafNode(index, port, superPeerPort) {
 	// Generate keys
 	process.stdout.write('Generating keys... ')
 	await promisify(exec)(`cd ${leafNodePath} && npm run generate-keys`)
+
+	// Install dependencies
+	process.stdout.write('Installing dependencies... ')
+	await promisify(exec)(`cd ${leafNodePath} && npm install`)
 }
 
 async function main() {
