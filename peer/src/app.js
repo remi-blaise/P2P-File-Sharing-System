@@ -1,10 +1,9 @@
 import fs from 'promise-fs'
 import client from './client'
 import server from './server'
-import config from './config.json'
+import config from './config'
 import colors from './colors'
 
-console.log(`${colors.DIM}Peer ID: ${config.peerId}${colors.RESET}`)
 console.log(`${colors.DIM}Listening port: ${config.port}${colors.RESET}`)
 
 // Create shared directory if doesn't exist

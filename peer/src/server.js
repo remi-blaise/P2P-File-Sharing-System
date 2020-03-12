@@ -3,7 +3,7 @@ import fs from 'promise-fs'
 import path from 'path'
 import { read } from './files'
 import { printError } from './client'
-import config from './config.json'
+import config from './config'
 import colors from './colors'
 
 // Create server

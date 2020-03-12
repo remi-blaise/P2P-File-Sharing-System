@@ -5,7 +5,7 @@ import { search } from './interface'
 import { read, hashFile } from './files'
 import { sendRegistry } from './files'
 import { retrieve } from './interface'
-import config from './config.json'
+import config from './config'
 import colors from './colors'
 
 // Instanciate the command line interface reader

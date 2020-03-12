@@ -2,7 +2,7 @@ import fs from 'promise-fs'
 import path from 'path'
 import { Socket } from 'net'
 import crypto from 'crypto'
-import config from './config.json'
+import config from './config'
 import { printError } from './client'
 
 /**
