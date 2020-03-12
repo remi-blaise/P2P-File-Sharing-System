@@ -4,5 +4,6 @@
 	"port": 8090,
 	"sharedDir": "share",
     "keyStorageDir": "keys",
-	"ttl": 10
+	"ttl": 10,
+	"queryLifetime": 3600
 }

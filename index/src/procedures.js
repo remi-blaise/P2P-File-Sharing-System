@@ -98,7 +98,7 @@ async function search(parameters, ip, port) {
 
     // 3. Log the message
 
-    logMessage(id, ip, port)
+    logMessage(parameters.messageId, ip, port)
 
     // 4. Propagate request
 

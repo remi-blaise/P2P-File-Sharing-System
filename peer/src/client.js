@@ -1,10 +1,14 @@
 import fs from 'promise-fs'
+import ip from 'ip'
 import path from 'path'
+import util from 'util'
+import crypto from 'crypto'
 import { createInterface } from 'readline'
 import { search } from './interface'
 import { read, hashFile } from './files'
 import { sendRegistry } from './files'
 import { retrieve } from './interface'
+import { queryhits } from './server'
 import config from './config'
 import colors from './colors'
 
@@ -37,6 +41,10 @@ async function ask(question) {
 			resolve(answer)
 		})
 	})
+}
+
+function sleep(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 /**
@@ -119,8 +127,23 @@ async function searchFile() {
 	// Ask for filename
 	const filename = await ask('\nName of the file: ')
 
+	// Cleaning queryhits before
+	//queryhits = {}
+	// Get sequence number
+	const seqPath = '.cache/sequence'
+	let sequenceNumber = 0
+	if (fs.existsSync(seqPath)) {
+		sequenceNumber = parseInt((await fs.readFile(seqPath)).toString())
+	}
+	sequenceNumber++
+	fs.writeFile(seqPath, sequenceNumber)
 	// Search file on index server
-	let data = await search(filename)
+	const messageId = crypto.createHash('SHA256').update(`[${ip.address()}:${config.port}, ${sequenceNumber}]`).digest('hex')
+	await search(messageId, filename)
+
+	await sleep(config.queryLifetime)
+
+	const data = queryhits[messageId]
 
 	if (data == undefined) {
 		// Back to menu

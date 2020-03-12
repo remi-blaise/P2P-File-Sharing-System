@@ -53,32 +53,19 @@ function sendData(data) {
  */
 export async function registry(host, port, files) {
 	const privateKeyFilename = config.keyStorageDir + '/privateKey.pem'
-	const registryCacheFilename = '.cache/lastPrivateKey.pem'
 	// Format request as JSON
 	const request = { name: 'registry', parameters: { ip: host, port: port, files: files } }
 	// Read keys
 	try {
 		const privateKey = await fs.readFile(privateKeyFilename)
-		var lastKey = null
-		try {
-			lastKey = await fs.readFile(registryCacheFilename)
-		} catch (e) {
-			// Ignore error
-		}
-		const isRegistered = lastKey != null
 		// Sign request
 		const sign = crypto.createSign('SHA256')
 		sign.write(JSON.stringify(request))
 		sign.end()
-		const signature = sign.sign(lastKey || privateKey, 'hex')
+		const signature = sign.sign(privateKey, 'hex')
 		request.parameters.signature = signature
 		// Send request
 		sendData(JSON.stringify(request))
-			.then(() => {
-				if (!isRegistered) {
-					fs.writeFile(registryCacheFilename, privateKey)
-				}
-			})
 			.catch(err => {
 				printError(`Registry request failed: ${err.message}`)
 			})
@@ -89,11 +76,12 @@ export async function registry(host, port, files) {
 
 /**
  * Search for a file on the index server
+ * @param {string} messageId - ID of the message
  * @param {string} filename - Name of the file to search for
  */
-export function search(filename) {
+export function search(messageId, fileName) {
 	// Format request as JSON
-	const request = { name: 'search', parameters: { ttl: config.ttl, fileName: filename } }
+	const request = { name: 'search', parameters: { messageId, ttl: config.ttl, fileName } }
 	// Send request
 	return sendData(JSON.stringify(request))
 		.catch(err => {

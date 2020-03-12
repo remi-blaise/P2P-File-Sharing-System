@@ -6,6 +6,8 @@ import { printError } from './client'
 import config from './config'
 import colors from './colors'
 
+export var queryhits = {}
+
 // Create server
 const server = net.createServer(socket => {
 	socket.on('data', data => {
@@ -29,6 +31,17 @@ const server = net.createServer(socket => {
 						stream.pipe(socket)
 					}
 				})
+			} else if (request.name == 'queryhit') {
+				if (request.parameters.messageID != undefined && request.parameters.fileId != undefined && request.parameters.ip != undefined && request.parameters.port != undefined) {
+					const hit = { fileId: request.parameters.fileId, ip: request.parameters.ip, port: request.parameters.port }
+					if (queryhits.includes(request.parameters.messageID)) {
+						queryhits[request.parameters.messageID].push(hit)
+					} else {
+						queryhits[request.parameters.messageID] = [hit]
+					}
+				} else {
+					console.log(`${colors.FG_RED}Received queryhit with invalid paramers${colors.RESET}`)
+				}
 			}
 		} catch (err) {
 			// Ignore parsing error

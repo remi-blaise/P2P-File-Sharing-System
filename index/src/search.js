@@ -7,6 +7,7 @@
  */
 
 import { search, queryhit } from './interface'
+import { retrieveFiles } from './repository'
 import config from './config'
 
 // Fisher-Yates from https://javascript.info/task/shuffle
