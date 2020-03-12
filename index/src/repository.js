@@ -1,115 +1,81 @@
 /**
  * repository.js
  *
- * Handle the persistence layer:
- * Communicate with the database to save and retrieve data.
+ * Handle the memory layer: save and retrieve data.
  *
  * @author Rémi Blaise <hello@remi-blaise.com>
  */
 
-import { Sequelize, Model, Op } from 'sequelize'
 import config from './config'
+import util from 'util'
 
-// 1. Initiliaze the connexion with the database
+/**
+ * In-memory file list
+ *
+ * Under the form:
+ * [
+ *     {
+ *         id,
+ *         hash,
+ *         name,
+ *         size,
+ *         peers = [
+ *             {
+ *                 ip, port
+ *             }
+ *         ]
+ *     }
+ * ]
+ */
+const files = []
 
-// Location of the sqlite database
-const DATABASE = './database.sqlite'
-
-// Instanciate Sequelize ORM
-const sequelize = new Sequelize({
-    dialect: 'sqlite',
-    storage: DATABASE
-})
-
-// Define models
-class Peer extends Model {}
-class File extends Model {}
-
-Peer.init({
-    id: {
-        type: Sequelize.STRING,
-        allowNull: false,
-        primaryKey: true
-    },
-    ip: {
-        type: Sequelize.STRING,
-        allowNull: false
-    },
-    port: {
-        type: Sequelize.SMALLINT,
-        allowNull: false
-    }
-}, { sequelize, modelName: 'peer' })
-
-File.init({
-    id: {
-        type: Sequelize.STRING,
-        allowNull: false,
-        primaryKey: true
-    },
-    hash: {
-        type: Sequelize.STRING,
-        allowNull: false,
-    },
-    name: {
-        type: Sequelize.STRING,
-        allowNull: false,
-    },
-    size: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
-    },
-}, { sequelize, modelName: 'file' })
-
-Peer.belongsToMany(File, { through: 'Peer_File' })
-File.belongsToMany(Peer, { through: 'Peer_File' })
-
-async function logAllDatabase() {
-    if (!config.logAllDatabase) return
-
-    const logList = modelName => list => console.log(modelName, list.map(({ dataValues }) => dataValues))
-    Peer.findAll({ include: [ File ] }).then(logList('Peers:'))
-    File.findAll({ include: [ Peer ] }).then(logList('Files:'))
+function logAllDatabase() {
+    if (config.logAllDatabase) console.log(util.inspect(files, false, null, true))
 }
 
-// Start synchronization
-sequelize.sync().then(logAllDatabase)
+Array.prototype.includesById = function(element) {
+    return this.filter(e => e.id === element.id).length
+}
 
 /**
  * Save a peer
- * @param {Peer} peer - The peer
- * @return {Promise<null>}
  */
-export async function registerPeer(peerData, filesData) {
-    // Retrieve or create the peer and the files
-    const [peer, created] = await Peer.findOrCreate({ where: { id: peerData.id }, defaults: peerData })
-    const files = []
-    for (const file of filesData) {
-        files.push(await File.findOrCreate({ where: { id: file.id }, defaults: file }))
-    }
+export function registerPeer(peer, peerFiles) {
+    const peerFileIds = peerFiles.map(file => file.id)
 
-    // Update the peer and the file list
-    if (created) await peer.update(peerData)
-    await peer.setFiles(files.flatMap(([ file, _ ]) => file))
+    // 1. If file is known and to unlink
+    files
+        .map((file, index) => [index, file])
+        .filter(([index, file]) => file.peers.includes(peer) && !peerFileIds.includes(file.id))
+        .forEach(([index, file]) => {
+            // If it was the only file's peer: remove the file
+            if (file.peers.length === 1) {
+                files.splice(index, 1)
+            }
+            // Else only remove peer from file's peer list
+            else {
+                file.peers = file.peers.filter(p => p !== peer)
+            }
+        })
 
-    // Print new database content
+    // 2. If file is known but not linked yet to peer: link it
+    files
+        .filter(file => peerFiles.includesById(file) && !file.peers.includes(peer))
+        .forEach(file => file.peers.push(peer))
+
+    // 3. If file is unknown: add it
+    peerFiles
+        .filter(file => !files.includesById(file))
+        .map(file => Object.assign({}, file, { peers: [peer] }))
+        .forEach(file => files.push(file))
+
     logAllDatabase()
 }
 
 /**
  * Retrieve all peers having a file
- * @param {string} fileId - The file hash
- * @return {Promise<Peer[]>} peers - Found peers
  */
-export async function retrieveFiles(fileName) {
-    // Search for files
-    let files = await File.findAll({ where: { name: { [Op.like]: `%${fileName}%` } }, include: [ Peer ] })
-
-    // Remove unavailable files
-    files = files.filter(file => file.peers.length)
-
-    // Return normalized data
-    return files.map(({ id, hash, name, size, peers }) => {
-        return { id, hash, name, size, peers: peers.map(({ id, ip, port }) => { return { id, ip, port } }) }
-    })
+export function retrieveFiles(fileName) {
+    // Search for file with corresponding file names
+    return files.filter(file => file.name.includes(fileName))
 }

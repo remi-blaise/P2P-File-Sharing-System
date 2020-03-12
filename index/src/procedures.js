@@ -34,18 +34,15 @@ function shuffle(array) {
 async function registry(parameters) {
     // 1. Validate parameters
 
-    checkForParameter('uuid', parameters)
     checkForParameter('ip', parameters)
     checkForParameter('port', parameters)
     checkForParameter('files', parameters)
     if (config.enableSignatureChecks) checkForParameter('signature', parameters)
 
-    if (typeof parameters.uuid !== 'string' || !isUUID(parameters.uuid)) throw "Bad uuid."
     if (typeof parameters.ip !== 'string' || !isIP(parameters.ip)) throw "Bad ip."
     if (typeof parameters.port !== 'number' || !isPort(parameters.port.toString())) throw "Bad port."
     if (!Array.isArray(parameters.files)) throw "Files should be an array."
     if (config.enableSignatureChecks && typeof parameters.signature !== 'string') throw "Signature should be a string."
-    if (config.enableSignatureChecks && parameters.publicKey && typeof parameters.publicKey !== 'string') throw "Bad public key."
 
     parameters.files.forEach((file, index) => {
         if (typeof file !== 'object') throw 'file #' + index + " should be an object."
@@ -57,31 +54,23 @@ async function registry(parameters) {
         if (typeof file.size !== 'number' || !isInt(file.size.toString())) throw 'file #' + index + "'s size should be an int in byte."
     })
 
+    const matchingLeafs = config.leafNodes.filter(leaf => leaf.ip === parameters.ip && leaf.port === parameters.port)
+    if (matchingLeafs.length !== 1) throw "Unknow leaf node in config."
+    const leafPeer = matchingLeafs[0]
+    const leafIndex = config.leafNodes.indexOf(leafPeer)
+
     // 2. Verify the signature
 
     if (config.enableSignatureChecks) {
-        const filename = config.keyStorageDir + '/' + parameters.uuid + '.pem'
-        const hasPublicKey = fs.existsSync(filename)
-        let publicKey
-
-        if (hasPublicKey) {
-            // If the public key exists, retrieve it
-            publicKey = fs.readFileSync(filename)
-        } else {
-            // Otherwise, require the public key to be given
-            if (!parameters.publicKey) throw "A public key should be given."
-            publicKey = parameters.publicKey
-        }
+        const filename = config.keyStorageDir + '/' + leafIndex + '.pem'
+        const publicKey = fs.readFileSync(filename)
 
         // Verify the signature
         const verify = crypto.createVerify('SHA256')
-        verify.write(JSON.stringify( (({ uuid, ip, port, files }) => { return { name: 'registry', parameters: { uuid, ip, port, files } } })(parameters) ))
+        verify.write(JSON.stringify( (({ ip, port, files }) => { return { name: 'registry', parameters: { ip, port, files } } })(parameters) ))
         verify.end()
 
         if (!verify.verify(publicKey, parameters.signature, 'hex')) throw "Invalid signature."
-
-        // If given, store the public key
-        if (parameters.publicKey) fs.writeFileSync(filename, publicKey)
     }
 
     // 3. Persist peer
@@ -89,7 +78,7 @@ async function registry(parameters) {
     registerPeer(
         // I select only data I want from the input
         // in case a malicious person adds unwanted keys
-        { id: parameters.uuid, ip: parameters.ip, port: parameters.port },
+        leafPeer,
         parameters.files.map(({ hash, name, size }) => { return { id: hash + '-' + name, hash, name, size } })
     )
 }

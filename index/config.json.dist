@@ -2,5 +2,17 @@
     "port": 8080,
     "keyStorageDir": "keys",
     "enableSignatureChecks": true,
-    "logAllDatabase": true
+    "logAllDatabase": true,
+    "leafNodes": [
+        {
+            "ip": "X.X.X.X",
+            "port": 1234
+        }
+    ],
+    "neighbors": [
+        {
+            "ip": "X.X.X.X",
+            "port": 1234
+        }
+    ]
 }
