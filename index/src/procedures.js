@@ -11,8 +11,9 @@ import { isUUID, isPort, isIP, isHash, isInt } from 'validator'
 import crypto from 'crypto'
 import fs from 'fs'
 import config from './config'
-import { registerPeer, logMessage, flushMessages } from './repository'
+import { registerPeer, logMessage, flushMessages, getMessageSender } from './repository'
 import { localSearch, propagateSearch } from './search'
+import interface from './interface'
 
 // Utility function
 function checkForParameter(name, parameters) {
@@ -110,7 +111,38 @@ async function search(parameters, ip, port) {
     return null
 }
 
+/**
+ * The queryhit procedure
+ * @param {object} parameters
+ * @return {any} data
+ */
+async function queryhit(parameters) {
+    // 1. Validate parameters
+
+    checkForParameter('messageId', parameters)
+    if (typeof parameters.messageId !== 'string') throw "messageId should be a string."
+    checkForParameter('fileId', parameters)
+    if (typeof parameters.fileId !== 'string') throw "fileId should be a string."
+    checkForParameter('ip', parameters)
+    if (typeof parameters.ip !== 'string') throw "ip should be a string."
+    checkForParameter('port', parameters)
+    if (typeof parameters.port !== 'number') throw "port should be a number."
+
+    // 2. Search for original message
+
+    const sender = getMessageSender(parameters.messageId)
+
+    // 3. Backpropagate
+
+    if (sender !== undefined) {
+        interface.queryhit(sender.ip, sender.port, parameters.messageId, parameters.fileId, parameters.ip, parameters.port)
+    }
+
+    return null
+}
+
 export default {
     registry,
-    search
+    search,
+    queryhit
 }
