@@ -7,13 +7,13 @@
  * @author Rémi Blaise <hello@remi-blaise.com>
  */
 
-import { isUUID, isPort, isIP, isHash, isInt } from 'validator'
+import { isPort, isIP, isHash, isInt } from 'validator'
 import crypto from 'crypto'
 import fs from 'fs'
 import config from './config'
-import { registerPeer, logMessage, flushMessages, getMessageSender } from './repository'
+import { registerPeer, logMessage, getMessageSender, flushMessages } from './repository'
 import { localSearch, propagateSearch } from './search'
-import interface from './interface'
+import { queryhit as clientQueryhit } from './interface'
 
 // Utility function
 function checkForParameter(name, parameters) {
@@ -135,7 +135,7 @@ async function queryhit(parameters) {
     // 3. Backpropagate
 
     if (sender !== undefined) {
-        interface.queryhit(sender.ip, sender.port, parameters.messageId, parameters.fileId, parameters.ip, parameters.port)
+        clientQueryhit(sender.ip, sender.port, parameters.messageId, parameters.fileId, parameters.ip, parameters.port)
     }
 
     return null
