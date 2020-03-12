@@ -9,6 +9,8 @@
 import config from './config'
 import util from 'util'
 
+/****** FILES ******/
+
 /**
  * In-memory file list
  *
@@ -78,4 +80,34 @@ export function registerPeer(peer, peerFiles) {
 export function retrieveFiles(fileName) {
     // Search for file with corresponding file names
     return files.filter(file => file.name.includes(fileName))
+}
+
+/****** MESSAGES ******/
+
+/**
+ * In-memory message list
+ * 
+ * Under the shape:
+ * [
+ *      {
+ *          messageId,
+ *          ip,
+ *          port,
+ *      }
+ * ]
+ */
+const messages = []
+
+export function logMessage(id, ip, port) {
+    messages.push({ messageId: id, ip: ip, port: port, timestamp: new Date() })
+}
+
+export function getMessageSender(id) {
+    return messages.find(message => message.id === id)
+}
+
+export function flushMessages() {
+    messages
+        .filter(message => message.timestamp < new Date() - config.queryLifetime)
+        .forEach((message, index) => message.splice(index, 1))
 }

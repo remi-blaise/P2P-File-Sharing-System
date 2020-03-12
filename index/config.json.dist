@@ -3,6 +3,7 @@
     "keyStorageDir": "keys",
     "enableSignatureChecks": true,
     "logAllDatabase": true,
+    "queryLifetime": 3600,
     "leafNodes": [
         {
             "ip": "X.X.X.X",
