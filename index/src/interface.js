@@ -55,13 +55,6 @@ function sendData(host, port, data) {
 			}
 			client.destroy()
 		})
-
-		// Timeout if the response is too long
-		setTimeout(() => {
-			const err = new Error('Response not received before timeout.')
-			console.log(`${BOLD}${RED}An error occured while sending data to the peer:`, err.message, RESET)
-			reject(err)
-		}, 1000)
 	})
 }
 
