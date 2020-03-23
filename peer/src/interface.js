@@ -1,4 +1,5 @@
 import fs from 'promise-fs'
+import ip from 'ip'
 import path from 'path'
 import { Socket } from 'net'
 import crypto from 'crypto'
@@ -81,7 +82,7 @@ export async function registry(host, port, files) {
  */
 export function search(messageId, fileName) {
 	// Format request as JSON
-	const request = { name: 'search', parameters: { messageId, ttl: config.ttl, fileName } }
+	const request = { name: 'search', parameters: { messageId, ttl: config.ttl, fileName, ip: ip.address(), port: config.port } }
 	// Send request
 	return sendData(JSON.stringify(request))
 		.catch(err => {

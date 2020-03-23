@@ -32,15 +32,17 @@ const server = net.createServer(socket => {
 					}
 				})
 			} else if (request.name == 'queryhit') {
-				if (request.parameters.messageID != undefined && request.parameters.fileId != undefined && request.parameters.ip != undefined && request.parameters.port != undefined) {
-					const hit = { fileId: request.parameters.fileId, ip: request.parameters.ip, port: request.parameters.port }
-					if (queryhits.includes(request.parameters.messageID)) {
-						queryhits[request.parameters.messageID].push(hit)
+				if (request.parameters.messageId != undefined && request.parameters.fileId != undefined && request.parameters.ip != undefined && request.parameters.port != undefined) {
+					const hit = { fileId: request.parameters.fileId, fileName: request.parameters.fileName, fileHash: request.parameters.fileHash, fileSize: request.parameters.fileSize, ip: request.parameters.ip, port: request.parameters.port }
+					if (queryhits.hasOwnProperty(request.parameters.messageId)) {
+						queryhits[request.parameters.messageId].push(hit)
 					} else {
-						queryhits[request.parameters.messageID] = [hit]
+						queryhits[request.parameters.messageId] = [hit]
 					}
+					socket.write(JSON.stringify({ status: 'success', data: null }))
 				} else {
 					console.log(`${colors.FG_RED}Received queryhit with invalid paramers${colors.RESET}`)
+					socket.write(JSON.stringify({ status: 'error', message: 'Invalid parameters' }))
 				}
 			}
 		} catch (err) {

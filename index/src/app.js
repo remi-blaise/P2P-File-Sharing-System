@@ -69,7 +69,7 @@ const server = net.createServer(socket => {
         if (!(procedure.name in procedures)) return sendError(socket, "Wrong procedure name.")
 
         try {
-            var data = await procedures[procedure.name](procedure.parameters, socket.remoteAddress, socket.remotePort)
+            var data = await procedures[procedure.name](procedure.parameters)
         }
         catch (exception) {
             return sendError(socket, exception)

@@ -109,5 +109,5 @@ export function getMessageSender(id) {
 export function flushMessages() {
     messages
         .filter(message => message.timestamp < new Date() - config.queryLifetime)
-        .forEach((message, index) => message.splice(index, 1))
+        .forEach((_message, index) => messages.splice(index, 1))
 }

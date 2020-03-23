@@ -8,6 +8,8 @@
 
 import { Socket } from 'net'
 import { RESET, BOLD, RED, GREEN, BLUE } from './colors'
+import ip from 'ip'
+import config from './config'
 
 /**
  * Send data to another peer
@@ -67,11 +69,13 @@ function sendData(host, port, data) {
  * Search for a file on the index server
  * @param {string} host - Host name
  * @param {number} port - Port
+ * @param {string} messageId - ID of the message
+ * @param {number} ttl - TTL (time-to-live) of the request
  * @param {string} filename - Name of the file to search for
  */
 export function search(host, port, messageId, ttl, fileName) {
 	// Format request as JSON
-	const request = { name: 'search', parameters: { messageId, ttl, fileName } }
+	const request = { name: 'search', parameters: { messageId, ttl, fileName, ip: ip.address(), port: config.port } }
 	// Send request
 	return sendData(host, port, JSON.stringify(request))
 }
@@ -80,11 +84,16 @@ export function search(host, port, messageId, ttl, fileName) {
  * Send a queryhit
  * @param {string} host - Host name
  * @param {number} port - Port
- * @param {string} filename - Name of the file to search for
+ * @param {string} fileId - ID of the file
+ * @param {string} fileHash - Hash of the file
+ * @param {string} fileName - Name of the file
+ * @param {number} fileSize - Size of the file
+ * @param {string} peerIp - IP of the peer
+ * @param {number} peerPort - Port of the peer
  */
-export function queryhit(host, port, messageId, fileId, peerIp, peerPort) {
+export function queryhit(host, port, messageId, fileId, fileHash, fileName, fileSize, peerIp, peerPort) {
 	// Format request as JSON
-	const request = { name: 'queryhit', parameters: { messageId, fileId, ip: peerIp, port: peerPort } }
+	const request = { name: 'queryhit', parameters: { messageId, fileId, fileHash, fileName, fileSize, ip: peerIp, port: peerPort } }
 	// Send request
 	return sendData(host, port, JSON.stringify(request))
 }

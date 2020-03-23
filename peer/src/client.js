@@ -1,7 +1,6 @@
 import fs from 'promise-fs'
 import ip from 'ip'
 import path from 'path'
-import util from 'util'
 import crypto from 'crypto'
 import { createInterface } from 'readline'
 import { search } from './interface'
@@ -140,33 +139,51 @@ async function searchFile() {
 	// Search file on index server
 	const messageId = crypto.createHash('SHA256').update(`[${ip.address()}:${config.port}, ${sequenceNumber}]`).digest('hex')
 	await search(messageId, filename)
-
+	process.stdout.write('\nSearching... ')
 	await sleep(config.queryLifetime)
 
-	const data = queryhits[messageId]
+	var results = queryhits[messageId]
 
-	if (data == undefined) {
+	if (results == undefined) {
+		console.log(`${colors.BRIGHT}${colors.FG_YELLOW}No file named ${colors.FG_CYAN}'${filename}'${colors.FG_YELLOW} found.${colors.RESET}`)
 		// Back to menu
 		showCLI()
 
 		return
 	}
 
-	// Remove self from peers
-	for (let i = 0; i < data.length; i++) {
-		const file = data[i];
-		file.peers = file.peers.filter(peer => peer.id != config.peerId)
-	}
+	// Remove self from results
+	results = results.filter(file => file.ip != ip.address() || file.port != config.port)
 
-	// Remove file if peers are empty
-	data = data.filter(file => file.peers.length > 0)
+	// Group by file ID
+	var data = []
+	results.forEach(result => {
+		var found = false
+		for (let i = 0; i < data.length; i++) {
+			if (data[i].fileId == result.fileId) {
+				data[i].peers.push({ ip: result.ip, port: result.port })
+				found = true
+				break
+			}
+		}
+
+		if (!found) {
+			data.push({
+				id: result.fileId,
+				hash: result.fileHash,
+				name: result.fileName,
+				size: result.fileSize,
+				peers: [{ ip: result.ip, port: result.port }]
+			})
+		}
+	})
 
 	if (data.length > 0) {
-		console.log(`\nFiles corresponding to ${colors.BRIGHT}${colors.FG_CYAN}'${filename}'${colors.RESET}:\n`)
+		console.log(`Files corresponding to ${colors.BRIGHT}${colors.FG_CYAN}'${filename}'${colors.RESET}:\n`)
 		var i = 1
 		data.forEach(file => {
 			console.log(colors.BRIGHT + i + '. ' + colors.RESET + file.name + ' (' + file.size + ' bytes) ' + colors.DIM + '(' + file.hash + ')' + colors.RESET + ' found on peers:')
-			console.log(file.peers.map(peer => ' - ' + peer.ip + colors.DIM + ' (' + peer.id + ')' + colors.RESET).join('\n'))
+			console.log(file.peers.map(peer => ' - ' + peer.ip + ':' + peer.port).join('\n'))
 			i++
 		})
 		console.log(`\nTotal: ${data.length}\n`)
@@ -180,12 +197,12 @@ async function searchFile() {
 			// Start download
 			downloadFile(file)
 		} else {
-			console.log('\nNo valid index entered, back to main menu')
+			console.log(`\n${colors.FG_YELLOW}No valid index entered, back to main menu.${colors.RESET}`)
 			// Back to menu
 			showCLI()
 		}
 	} else {
-		console.log(`\n${colors.BRIGHT}${colors.FG_YELLOW}No file named ${colors.FG_CYAN}'${filename}'${colors.FG_YELLOW} found.${colors.RESET}`)
+		console.log(`${colors.BRIGHT}${colors.FG_YELLOW}No file named ${colors.FG_CYAN}'${filename}'${colors.FG_YELLOW} found.${colors.RESET}`)
 		// Back to menu
 		showCLI()
 	}

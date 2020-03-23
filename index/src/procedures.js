@@ -82,23 +82,27 @@ async function registry(parameters) {
  * @param {object} parameters
  * @return {any} data
  */
-async function search(parameters, ip, port) {
+async function search(parameters) {
     // 1. Validate parameters
 
     checkForParameter('messageId', parameters)
     checkForParameter('ttl', parameters)
     checkForParameter('fileName', parameters)
+    checkForParameter('ip', parameters)
+    checkForParameter('port', parameters)
     if (typeof parameters.messageId !== 'string') throw "messageId should be a string."
     if (typeof parameters.ttl !== 'number') throw "ttl should be a number."
     if (typeof parameters.fileName !== 'string') throw "fileName should be a string."
+    if (typeof parameters.ip !== 'string') throw "ip should be a string."
+    if (typeof parameters.port !== 'number') throw "port should be a string."
 
     // 2. Start local search
 
-    localSearch(parameters.messageId, parameters.fileName, ip, port)
+    localSearch(parameters.messageId, parameters.fileName, parameters.ip, parameters.port)
 
     // 3. Log the message
 
-    logMessage(parameters.messageId, ip, port)
+    logMessage(parameters.messageId, parameters.ip, parameters.port)
 
     // 4. Propagate request
 
@@ -135,7 +139,7 @@ async function queryhit(parameters) {
     // 3. Backpropagate
 
     if (sender !== undefined) {
-        clientQueryhit(sender.ip, sender.port, parameters.messageId, parameters.fileId, parameters.ip, parameters.port)
+        clientQueryhit(sender.ip, sender.port, parameters.messageId, parameters.fileId, parameters.fileHash, parameters.fileName, parameters.fileSize, parameters.ip, parameters.port)
     }
 
     return null
