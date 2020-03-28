@@ -61,7 +61,7 @@ async function registry(parameters) {
 
         // Verify the signature
         const verify = crypto.createVerify('SHA256')
-        verify.write(JSON.stringify( (({ ip, port, files }) => { return { name: 'registry', parameters: { ip, port, files } } })(parameters) ))
+        verify.write(JSON.stringify((({ ip, port, files }) => { return { name: 'registry', parameters: { ip, port, files } } })(parameters)))
         verify.end()
 
         if (!verify.verify(publicKey, parameters.signature, 'hex')) throw "Invalid signature."
@@ -96,19 +96,25 @@ async function search(parameters) {
     if (typeof parameters.ip !== 'string') throw "ip should be a string."
     if (typeof parameters.port !== 'number') throw "port should be a string."
 
-    // 2. Start local search
+    // 2. Ignore if the message was already received
+
+    if (getMessageSender(parameters.messageId) != undefined) {
+        return null
+    }
+
+    // 3. Start local search
 
     localSearch(parameters.messageId, parameters.fileName, parameters.ip, parameters.port)
 
-    // 3. Log the message
+    // 4. Log the message
 
     logMessage(parameters.messageId, parameters.ip, parameters.port)
 
-    // 4. Propagate request
+    // 5. Propagate request
 
     if (parameters.ttl > 0) propagateSearch({ ...parameters, ttl: parameters.ttl - 1 })
 
-    // 5. Flush log
+    // 6. Flush log
 
     flushMessages()
 

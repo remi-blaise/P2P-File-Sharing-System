@@ -103,7 +103,7 @@ export function logMessage(id, ip, port) {
 }
 
 export function getMessageSender(id) {
-    return messages.find(message => message.id === id)
+    return messages.find(message => message.messageId === id)
 }
 
 export function flushMessages() {
