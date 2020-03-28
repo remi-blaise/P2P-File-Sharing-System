@@ -1,4 +1,3 @@
-Peer ID: 2f70d1a0-4922-11ea-816a-f15f8534f811
 Listening port: 8090
 
 ====== WELCOME TO P2P FILE SHARING SYSTEM ======
@@ -26,16 +25,16 @@ What do you want to do? 2
 
 Name of the file: file10
 
-Files corresponding to 'file10':
+Searching... Files corresponding to 'file10':
 
 1. file10 (20025 bytes) (17489461f9628b7eb01e7393dbf21918e88f427d) found on peers:
- - 104.194.117.168 (eec28cd0-4920-11ea-85f8-7b1b2a6f434f)
+ - 104.194.117.168:8083
 
 Total: 1
 
 Which file do you want to download? 1
 
-Downloading... File successfully downloaded!
+Downloading from 104.194.117.168... File successfully downloaded!
 
 1. See the list of local files
 2. Download a file
