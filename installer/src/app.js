@@ -7,7 +7,7 @@ import { ask, deleteFolderRecursive, copyFolderRecursive } from './utils'
 import colors from '../../peer/src/colors'
 
 const TARGET_DIR = '../target'
-const SP_SRC_DIR = '../index'
+const SP_SRC_DIR = '../superpeer'
 const LN_SRC_DIR = '../peer'
 const IP_ADDR = ip.address()
 
