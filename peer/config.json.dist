@@ -5,5 +5,5 @@
 	"sharedDir": "share",
     "keyStorageDir": "keys",
 	"ttl": 10,
-	"queryLifetime": 3600
+	"queryLifetime": 1000
 }
