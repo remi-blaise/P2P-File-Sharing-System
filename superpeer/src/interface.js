@@ -90,3 +90,18 @@ export function queryhit(host, port, messageId, fileId, fileHash, fileName, file
 	// Send request
 	return sendData(host, port, JSON.stringify(request))
 }
+
+/**
+ * Invalidate a file on the network
+ * @param {string} host - Host name
+ * @param {number} port - Port
+ * @param {string} messageId - ID of the message
+ * @param {string} fileName - Name of the file to invalidate
+ * @param {number} version - New version number of the file
+ */
+export function invalidate(host, port, messageId, fileName, version) {
+	// Format request as JSON
+	const request = { name: 'invalidate', parameters: { messageId, ip: ip.address(), port: config.port, fileName, version } }
+	// Send request
+	return sendData(host, port, JSON.stringify(request))
+}

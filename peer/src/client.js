@@ -1,13 +1,13 @@
 import fs from 'promise-fs'
 import ip from 'ip'
 import path from 'path'
-import crypto from 'crypto'
 import { createInterface } from 'readline'
 import { search } from './interface'
 import { read, hashFile } from './files'
 import { sendRegistry } from './files'
-import { retrieve } from './interface'
+import { invalidate, retrieve, generateMessageID } from './interface'
 import { queryhits } from './server'
+import repository from './repository'
 import config from './config'
 import colors from './colors'
 
@@ -50,11 +50,43 @@ function sleep(ms) {
  * Start client peer
  */
 function start() {
+	// Add missing files to database
+	read()
+		.then(async files => {
+			repository.sequelize
+				.transaction(t => {
+					return Promise.all(files.map(file => {
+						return repository.File.findOrCreate({ where: { name: file.name, owned: true }, transaction: t })
+					}))
+				})
+				.catch(err => {
+					console.error(err)
+				})
+		})
+
 	// Register to the index server
 	sendRegistry()
 
 	// Watch shared directory changes
-	fs.watch(config.sharedDir, sendRegistry)
+	fs.watch(config.sharedDir, (_, filename) => {
+		repository.File.findOne({ where: { name: filename, owned: true } })
+			.then(async file => {
+				if (file != null) {
+					file.version += 1
+					file.save()
+
+					// Invalidate request
+					invalidate(await generateMessageID(), file.name, file.version)
+				} else {
+					File.create({ name: filename, owned: true })
+						.catch(err => console.error(err))
+				}
+
+				// Register to the index server
+				sendRegistry()
+			})
+			.catch(err => console.error(err))
+	})
 
 	// Show CLI
 	console.log(`\n${colors.BRIGHT}====== WELCOME TO P2P FILE SHARING SYSTEM ======${colors.RESET}`)
@@ -128,20 +160,12 @@ async function searchFile() {
 
 	// Cleaning queryhits before
 	//queryhits = {}
-	// Get sequence number
-	const seqPath = '.cache/sequence'
-	let sequenceNumber = 0
-	if (fs.existsSync(seqPath)) {
-		sequenceNumber = parseInt((await fs.readFile(seqPath)).toString())
-	}
-	sequenceNumber++
-	fs.writeFile(seqPath, sequenceNumber)
+	// Get message ID
+	const messageId = await generateMessageID()
 	// Search file on index server
-	const messageId = crypto.createHash('SHA256').update(`[${ip.address()}:${config.port}, ${sequenceNumber}]`).digest('hex')
 	await search(messageId, filename)
 	process.stdout.write('\nSearching... ')
 	await sleep(config.queryLifetime)
-
 	var results = queryhits[messageId]
 
 	if (results == undefined) {
@@ -219,11 +243,11 @@ async function downloadFile(file, i = 0) {
 		process.stdout.write(`\nDownloading from ${peer.ip}... `)
 
 		try {
-			await retrieve(file.hash, peer.ip, peer.port) 
+			await retrieve(file.hash, peer.ip, peer.port)
 
 			// Check that file has the same hash
 			try {
-				const hash =  await hashFile(path.join(config.sharedDir, file.name))
+				const hash = await hashFile(path.join(config.sharedDir, file.name))
 
 				if (hash != file.hash) {
 					printError('File downloaded corrupted')

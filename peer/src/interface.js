@@ -91,6 +91,22 @@ export function search(messageId, fileName) {
 }
 
 /**
+ * Invalidate a file on the network
+ * @param {string} messageId - ID of the message
+ * @param {string} fileName - Name of the file to invalidate
+ * @param {number} version - New version number of the file
+ */
+export function invalidate(messageId, fileName, version) {
+	// Format request as JSON
+	const request = { name: 'invalidate', parameters: { messageId, ip: ip.address(), port: config.port, fileName, version } }
+	// Send request
+	return sendData(JSON.stringify(request))
+		.catch(err => {
+			printError(`Invalidate request failed: ${err.message}`)
+		})
+}
+
+/**
  * Retrieve a file from a peer
  * @param {string} file - ID of the file to download
  * @param {string} host - Hostname of the peer
@@ -140,4 +156,20 @@ export function retrieve(file, host, port) {
 			}
 		})
 	})
+}
+
+/**
+ * Generate a message ID
+ * @returns {number} Message ID
+ */
+export async function generateMessageID() {
+	const seqPath = '.cache/sequence'
+	let sequenceNumber = 0
+	if (fs.existsSync(seqPath)) {
+		sequenceNumber = parseInt((await fs.readFile(seqPath)).toString())
+	}
+	sequenceNumber++
+	fs.writeFile(seqPath, sequenceNumber)
+
+	return crypto.createHash('SHA256').update(`[${ip.address()}:${config.port}, ${sequenceNumber}]`).digest('hex')
 }

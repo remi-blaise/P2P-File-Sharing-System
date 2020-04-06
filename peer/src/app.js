@@ -12,6 +12,12 @@ if (!fs.existsSync(config.sharedDir)) {
 	console.log(`Shared directory created at path ${config.sharedDir}`)
 }
 
+// Create downloads directory if doesn't exist
+if (!fs.existsSync(config.downloadDir)) {
+	fs.mkdirSync(config.downloadDir)
+	console.log(`Downloads directory created at path ${config.downloadDir}`)
+}
+
 // Create key storage directory if doesn't exist
 if (!fs.existsSync(config.keyStorageDir)) {
 	fs.mkdirSync(config.keyStorageDir)

@@ -3,6 +3,7 @@ import fs from 'promise-fs'
 import path from 'path'
 import { read } from './files'
 import { printError } from './client'
+import repository from './repository'
 import config from './config'
 import colors from './colors'
 
@@ -39,6 +40,21 @@ const server = net.createServer(socket => {
 					} else {
 						queryhits[request.parameters.messageId] = [hit]
 					}
+					socket.write(JSON.stringify({ status: 'success', data: null }))
+				} else {
+					console.log(`${colors.FG_RED}Received queryhit with invalid paramers${colors.RESET}`)
+					socket.write(JSON.stringify({ status: 'error', message: 'Invalid parameters' }))
+				}
+			} else if (request.name = 'invalidate') {
+				if (request.parameters.messageId != undefined && request.parameters.fileName != undefined && request.parameters.version != undefined && request.parameters.ip != undefined && request.parameters.port != undefined) {
+					repository.File.findOne({ where: { name: request.parameters.fileName } })
+						.then(file => {
+							if (file != null) {
+								file.valid = false
+								file.save()
+							}
+						})
+						.catch(err => console.error(err))
 					socket.write(JSON.stringify({ status: 'success', data: null }))
 				} else {
 					console.log(`${colors.FG_RED}Received queryhit with invalid paramers${colors.RESET}`)

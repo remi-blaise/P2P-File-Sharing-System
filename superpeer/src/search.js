@@ -6,7 +6,7 @@
  * @author Rémi Blaise <hello@remi-blaise.com>
  */
 
-import { search, queryhit } from './interface'
+import { search, queryhit, invalidate } from './interface'
 import { retrieveFiles } from './repository'
 import config from './config'
 
@@ -35,5 +35,16 @@ export async function localSearch(messageId, fileName, ip, port) {
 export async function propagateSearch(parameters) {
     config.neighbors.forEach(neighbor =>
         search(neighbor.ip, neighbor.port, parameters.messageId, parameters.ttl, parameters.fileName)
+    )
+}
+
+export async function propagateInvalidate(parameters) {
+    config.neighbors.forEach(neighbor =>
+        invalidate(neighbor.ip, neighbor.port, parameters.messageId, parameters.fileName, parameters.version)
+    )
+
+    config.leafNodes.filter(leafnode => leafnode.ip != parameters.ip || leafnode.port != parameters.port)
+    .forEach(leafnode =>
+        invalidate(leafnode.ip, leafnode.port, parameters.messageId, parameters.fileName, parameters.version)
     )
 }

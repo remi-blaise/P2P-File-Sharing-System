@@ -3,6 +3,7 @@
 	"indexPort": 8080,
 	"port": 8090,
 	"sharedDir": "share",
+	"downloadDir": "downloads",
     "keyStorageDir": "keys",
 	"ttl": 10,
 	"queryLifetime": 1000

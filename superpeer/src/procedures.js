@@ -12,7 +12,7 @@ import crypto from 'crypto'
 import fs from 'fs'
 import config from './config'
 import { registerPeer, logMessage, getMessageSender, flushMessages } from './repository'
-import { localSearch, propagateSearch } from './search'
+import { localSearch, propagateSearch, propagateInvalidate } from './search'
 import { queryhit as clientQueryhit } from './interface'
 
 // Utility function
@@ -151,8 +151,49 @@ async function queryhit(parameters) {
     return null
 }
 
+/**
+ * The invalidate procedure
+ * @param {object} parameters
+ * @return {any} data
+ */
+function invalidate(parameters) {
+    // 1. Validate parameters
+
+    checkForParameter('messageId', parameters)
+    if (typeof parameters.messageId !== 'string') throw "messageId should be a string."
+    checkForParameter('fileName', parameters)
+    if (typeof parameters.fileName !== 'string') throw "fileName should be a string."
+    checkForParameter('version', parameters)
+    if (typeof parameters.version !== 'number') throw "version should be a number."
+    checkForParameter('ip', parameters)
+    if (typeof parameters.ip !== 'string') throw "ip should be a string."
+    checkForParameter('port', parameters)
+    if (typeof parameters.port !== 'number') throw "port should be a number."
+
+    // 2. Ignore if the message was already received
+
+    if (getMessageSender(parameters.messageId) != undefined) {
+        return null
+    }
+
+    // 3. Log the message
+
+    logMessage(parameters.messageId, parameters.ip, parameters.port)
+
+    // 4. Propagate request
+
+    propagateInvalidate(parameters)
+
+    // 5. Flush log
+
+    flushMessages()
+
+    return null
+}
+
 export default {
     registry,
     search,
-    queryhit
+    queryhit,
+    invalidate
 }
