@@ -36,19 +36,19 @@ function logAllDatabase() {
 }
 
 Array.prototype.includesById = function(element) {
-    return this.filter(e => e.id === element.id).length
+    return this.filter(e => e.name === element.name).length
 }
 
 /**
  * Save a peer
  */
 export function registerPeer(peer, peerFiles) {
-    const peerFileIds = peerFiles.map(file => file.id)
+    const peerFileIds = peerFiles.map(file => file.name)
 
     // 1. If file is known and to unlink
     files
         .map((file, index) => [index, file])
-        .filter(([index, file]) => file.peers.includes(peer) && !peerFileIds.includes(file.id))
+        .filter(([index, file]) => file.peers.includes(peer) && !peerFileIds.includes(file.name))
         .forEach(([index, file]) => {
             // If it was the only file's peer: remove the file
             if (file.peers.length === 1) {

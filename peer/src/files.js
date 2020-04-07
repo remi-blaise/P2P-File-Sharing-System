@@ -2,9 +2,11 @@ import path from 'path'
 import ip from 'ip'
 import fs from 'promise-fs'
 import crypto from 'crypto'
-import config from './config'
+import { Op } from 'sequelize'
 import { registry } from './interface'
 import { printError } from './client'
+import repository from './repository'
+import config from './config'
 
 /**
  * Hash a file in SHA1
@@ -50,7 +52,7 @@ export async function read() {
  * Read the files and then send registry to the index server
  */
 export function sendRegistry() {
-	read()
+	repository.File.findAll({ where: { [Op.or]: [{ valid: true }, { owned: true }] } })
 		.then(files => {
 			registry(ip.address(), config.port, files)
 		})

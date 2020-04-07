@@ -40,12 +40,12 @@ async function registry(parameters) {
 
     parameters.files.forEach((file, index) => {
         if (typeof file !== 'object') throw 'file #' + index + " should be an object."
-        checkForParameter('hash', file)
+        //checkForParameter('hash', file)
         checkForParameter('name', file)
-        checkForParameter('size', file)
-        if (typeof file.hash !== 'string' || !isHash(file.hash, 'sha1')) throw 'file #' + index + "'s hash is not a valid sha-1 hash."
+        //checkForParameter('size', file)
+        //if (typeof file.hash !== 'string' || !isHash(file.hash, 'sha1')) throw 'file #' + index + "'s hash is not a valid sha-1 hash."
         if (typeof file.name !== 'string') throw 'file #' + index + "'s name should be a string."
-        if (typeof file.size !== 'number' || !isInt(file.size.toString())) throw 'file #' + index + "'s size should be an int in byte."
+        //if (typeof file.size !== 'number' || !isInt(file.size.toString())) throw 'file #' + index + "'s size should be an int in byte."
     })
 
     const matchingLeafs = config.leafNodes.filter(leaf => leaf.ip === parameters.ip && leaf.port === parameters.port)
@@ -73,7 +73,7 @@ async function registry(parameters) {
         // I select only data I want from the input
         // in case a malicious person adds unwanted keys
         leafPeer,
-        parameters.files.map(({ hash, name, size }) => { return { id: hash + '-' + name, hash, name, size } })
+        parameters.files
     )
 }
 

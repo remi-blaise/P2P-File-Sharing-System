@@ -17,21 +17,20 @@ const server = net.createServer(socket => {
 			const request = JSON.parse(data.toString())
 			// Identify retrieve request
 			if (request.name == 'retrieve') {
-				read().then(files => {
-					// Find requested file
-					const file = files.find(file => file.hash == request.parameters.fileId)
-					if (file == undefined) {
-						// File not found
-						const request = { statut: 'error', message: 'File requested not found' }
-						socket.write(JSON.stringify(request))
-					} else {
-						console.log(`${colors.FG_MAGENTA}File requested: ${file.hash} (${colors.FG_CYAN}${file.name}${colors.FG_MAGENTA})${colors.RESET}`)
-						// Send requested file
-						socket.write(JSON.stringify({ status: 'success', data: { filename: file.name } }) + ';')
-						const stream = fs.createReadStream(path.join(config.sharedDir, file.name))
-						stream.pipe(socket)
-					}
-				})
+				repository.File.findOne({ where: { name: request.parameters.fileName, owned: true } })
+					.then(file => {
+						if (file == null) {
+							// File not found
+							const request = { statut: 'error', message: 'File requested not found' }
+							socket.write(JSON.stringify(request))
+						} else {
+							console.log(`${colors.FG_MAGENTA}File requested: ${colors.FG_CYAN}${file.name}${colors.RESET}`)
+							// Send requested file
+							socket.write(JSON.stringify({ status: 'success', data: { filename: file.name, version: file.version, ip: file.ip, port: file.port } }) + ';')
+							const stream = fs.createReadStream(path.join(config.sharedDir, file.name))
+							stream.pipe(socket)
+						}
+					})
 			} else if (request.name == 'queryhit') {
 				if (request.parameters.messageId != undefined && request.parameters.fileId != undefined && request.parameters.ip != undefined && request.parameters.port != undefined) {
 					const hit = { fileId: request.parameters.fileId, fileName: request.parameters.fileName, fileHash: request.parameters.fileHash, fileSize: request.parameters.fileSize, ip: request.parameters.ip, port: request.parameters.port }

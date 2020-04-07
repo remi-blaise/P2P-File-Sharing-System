@@ -52,20 +52,19 @@ function sleep(ms) {
 function start() {
 	// Add missing files to database
 	read()
-		.then(async files => {
-			repository.sequelize
+		.then(files => {
+			return repository.sequelize
 				.transaction(t => {
 					return Promise.all(files.map(file => {
 						return repository.File.findOrCreate({ where: { name: file.name, owned: true }, transaction: t })
 					}))
 				})
-				.catch(err => {
-					console.error(err)
-				})
 		})
-
-	// Register to the index server
-	sendRegistry()
+		.then(() => {
+			// Register to the index server
+			sendRegistry()
+		})
+		.catch(err => console.error(err))
 
 	// Watch shared directory changes
 	fs.watch(config.sharedDir, (_, filename) => {
@@ -86,6 +85,12 @@ function start() {
 				sendRegistry()
 			})
 			.catch(err => console.error(err))
+	})
+
+	// Watch download directory changed
+	fs.watch(config.downloadDir, () => {
+		// Register to the index server
+		sendRegistry()
 	})
 
 	// Show CLI
@@ -240,13 +245,13 @@ async function searchFile() {
 async function downloadFile(file, i = 0) {
 	if (i < file.peers.length) {
 		const peer = file.peers[i]
-		process.stdout.write(`\nDownloading from ${peer.ip}... `)
+		process.stdout.write(`\nDownloading from ${peer.ip}:${peer.port}... `)
 
 		try {
-			await retrieve(file.hash, peer.ip, peer.port)
+			await retrieve(file.name, peer.ip, peer.port)
 
 			// Check that file has the same hash
-			try {
+			/*try {
 				const hash = await hashFile(path.join(config.sharedDir, file.name))
 
 				if (hash != file.hash) {
@@ -254,16 +259,16 @@ async function downloadFile(file, i = 0) {
 					fs.unlink(path.join(config.sharedDir, file.name))
 					// Try next peer
 					downloadFile(file, i + 1)
-				} else {
+				} else {*/
 					console.log(`${colors.BRIGHT}${colors.FG_GREEN}File successfully downloaded!${colors.RESET}`)
 					// Back to menu
 					showCLI()
-				}
+				/*}
 			} catch (err) {
 				printError(`Cannot read file '${file.name}' (${err.code})`)
 				// Back to menu
 				showCLI()
-			}
+			}*/
 		} catch (err) {
 			printError(err.message)
 			// Try next peer

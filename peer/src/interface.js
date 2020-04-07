@@ -5,6 +5,7 @@ import { Socket } from 'net'
 import crypto from 'crypto'
 import config from './config'
 import { printError } from './client'
+import repository from './repository'
 
 /**
  * Send data to the index server
@@ -117,7 +118,7 @@ export function retrieve(file, host, port) {
 	const socket = new Socket()
 	socket.connect(port, host)
 	// Send request
-	const request = { name: 'retrieve', parameters: { fileId: file } }
+	const request = { name: 'retrieve', parameters: { fileName: file } }
 	socket.write(JSON.stringify(request), err => {
 		if (err) {
 			printError(`Failed to send data to the peer (${err.code})`)
@@ -142,11 +143,13 @@ export function retrieve(file, host, port) {
 				if (response.status == 'success') {
 					// Write content to file
 					const filename = response.data.filename
-					const dest = fs.createWriteStream(path.join(config.sharedDir, filename))
+					const dest = fs.createWriteStream(path.join(config.downloadDir, filename))
 					dest.write(content, () => {
 						socket.destroy()
 						resolve()
 					})
+					// Add to database
+					repository.File.create({ name: filename, version: response.data.version, owned: false, valid: true, ip: response.data.ip, port: response.data.port })
 				} else {
 					const err = new Error(response.message || 'Unkown error')
 					reject(err)
