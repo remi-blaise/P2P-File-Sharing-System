@@ -20,16 +20,18 @@ export function hashFile(path) {
 
 /**
  * Read files in shared directory
+ * @param {boolean} downloaded - Read downloaded or shared files
  * @returns {Promise} Files with id, name and size
  */
-export async function read() {
+export async function read(downloaded = false) {
 	// Read shared directory
+	const dir = downloaded ? config.downloadDir : config.sharedDir
 	try {
-		var files = await fs.readdir(config.sharedDir)
+		var files = await fs.readdir(dir)
 		files = files.filter(file => !/\..*/.test(file)) // Exclude hidden files
 		// For each file, return an object with data to send
 		const promises = files.map(async (file) => {
-			const pathfile = path.join(config.sharedDir, file)
+			const pathfile = path.join(dir, file)
 			// Read file to get hash
 			const hash = hashFile(pathfile)
 				.catch(err => printError(`Cannot read file '${pathfile}' (${err.code})`))

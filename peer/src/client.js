@@ -143,13 +143,19 @@ async function showCLI() {
  * List local files
  */
 async function listFiles() {
-	const files = await read()
+	const sharedFiles = await read()
+	const downloadedFiles = await read(true)
 
-	if (files.length > 0) {
-		console.log('\nList of local files:')
-		console.log(files.map(file => file.size + '\t' + file.name + '\t' + file.hash).join('\n'))
+	if (sharedFiles.length > 0) {
+		console.log('\nList of shared files:')
+		console.log(sharedFiles.map(file => file.size + '\t' + file.name + '\t' + file.hash).join('\n'))
 	} else {
 		console.log('\nThe shared directory is empty…')
+	}
+
+	if (downloadedFiles.length > 0) {
+		console.log('\nList of downloaded files:')
+		console.log(downloadedFiles.map(file => file.size + '\t' + file.name + '\t' + file.hash).join('\n'))
 	}
 
 	// Back to menu
