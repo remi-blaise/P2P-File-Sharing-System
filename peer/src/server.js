@@ -32,8 +32,8 @@ const server = net.createServer(socket => {
 						}
 					})
 			} else if (request.name == 'queryhit') {
-				if (request.parameters.messageId != undefined && request.parameters.fileId != undefined && request.parameters.ip != undefined && request.parameters.port != undefined) {
-					const hit = { fileId: request.parameters.fileId, fileName: request.parameters.fileName, fileHash: request.parameters.fileHash, fileSize: request.parameters.fileSize, ip: request.parameters.ip, port: request.parameters.port }
+				if (request.parameters.messageId != undefined && request.parameters.fileName != undefined && request.parameters.ip != undefined && request.parameters.port != undefined) {
+					const hit = { fileName: request.parameters.fileName, ip: request.parameters.ip, port: request.parameters.port }
 					if (queryhits.hasOwnProperty(request.parameters.messageId)) {
 						queryhits[request.parameters.messageId].push(hit)
 					} else {

@@ -84,9 +84,9 @@ export function search(host, port, messageId, ttl, fileName) {
  * @param {string} peerIp - IP of the peer
  * @param {number} peerPort - Port of the peer
  */
-export function queryhit(host, port, messageId, fileId, fileHash, fileName, fileSize, peerIp, peerPort) {
+export function queryhit(host, port, messageId, fileName, peerIp, peerPort) {
 	// Format request as JSON
-	const request = { name: 'queryhit', parameters: { messageId, fileId, fileHash, fileName, fileSize, ip: peerIp, port: peerPort } }
+	const request = { name: 'queryhit', parameters: { messageId, fileName, ip: peerIp, port: peerPort } }
 	// Send request
 	return sendData(host, port, JSON.stringify(request))
 }

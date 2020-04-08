@@ -130,9 +130,9 @@ async function queryhit(parameters) {
     // 1. Validate parameters
 
     checkForParameter('messageId', parameters)
-    if (typeof parameters.messageId !== 'string') throw "messageId should be a string."
-    checkForParameter('fileId', parameters)
-    if (typeof parameters.fileId !== 'string') throw "fileId should be a string."
+   if (typeof parameters.messageId !== 'string') throw "messageId should be a string."
+    checkForParameter('fileName', parameters)
+    if (typeof parameters.fileName !== 'string') throw "fileName should be a string."
     checkForParameter('ip', parameters)
     if (typeof parameters.ip !== 'string') throw "ip should be a string."
     checkForParameter('port', parameters)
@@ -145,7 +145,7 @@ async function queryhit(parameters) {
     // 3. Backpropagate
 
     if (sender !== undefined) {
-        clientQueryhit(sender.ip, sender.port, parameters.messageId, parameters.fileId, parameters.fileHash, parameters.fileName, parameters.fileSize, parameters.ip, parameters.port)
+        clientQueryhit(sender.ip, sender.port, parameters.messageId, parameters.fileName, parameters.ip, parameters.port)
     }
 
     return null
