@@ -11,7 +11,7 @@ export var queryhits = {}
 
 // Create server
 const server = net.createServer(socket => {
-	socket.on('data', data => {
+	socket.on('data', async data => {
 		try {
 			// Parse request
 			const request = JSON.parse(data.toString())
@@ -26,7 +26,14 @@ const server = net.createServer(socket => {
 						} else {
 							console.log(`${colors.FG_MAGENTA}File requested: ${colors.FG_CYAN}${file.name}${colors.RESET}`)
 							// Send requested file
-							socket.write(JSON.stringify({ status: 'success', data: { filename: file.name, version: file.version, ip: file.ip, port: file.port } }) + ';')
+							socket.write(JSON.stringify({ status: 'success', data: {
+								filename: file.name,
+								version: file.version,
+								ip: file.ip,
+								port: file.port,
+								ttr: config.ttr,
+								lastModifiedTime: (new Date()).toISOString(),
+							} }) + ';')
 							const stream = fs.createReadStream(path.join(config.sharedDir, file.name))
 							stream.pipe(socket)
 						}
@@ -56,7 +63,34 @@ const server = net.createServer(socket => {
 						.catch(err => console.error(err))
 					socket.write(JSON.stringify({ status: 'success', data: null }))
 				} else {
-					console.log(`${colors.FG_RED}Received queryhit with invalid paramers${colors.RESET}`)
+					console.log(`${colors.FG_RED}Received invalid paramers${colors.RESET}`)
+					socket.write(JSON.stringify({ status: 'error', message: 'Invalid parameters' }))
+				}
+			} else if (request.name = 'poll') {
+				if (config.strategy !== 1) {
+					console.log(`${colors.FG_RED}Set strategy to ${colors.RESET}`)
+					socket.write(JSON.stringify({ status: 'error', message: 'Unknown file, it may have been deleted?' }))
+				}
+
+				if (request.parameters.fileName != undefined && request.parameters.version != undefined) {
+					try {
+						const file = await repository.File.findOne({ where: { name: request.parameters.fileName } })
+					} catch (err) {
+						console.log(`${colors.FG_RED}Error reading database${colors.RESET}`)
+						socket.write(JSON.stringify({ status: 'error', message: 'Error reading database$' }))
+						return
+					}
+					if (file === null) {
+						console.log(`${colors.FG_RED}Unknown file${colors.RESET}`)
+						socket.write(JSON.stringify({ status: 'error', message: 'Unknown file, it may have been deleted?' }))
+					}
+					socket.write(JSON.stringify({ status: 'success', data: {
+						upToDate: file.version === request.parameters.version,
+						ttr: config.ttr,
+						lastModifiedTime: (new Date()).toISOString(),
+					} }))
+				} else {
+					console.log(`${colors.FG_RED}Received invalid paramers${colors.RESET}`)
 					socket.write(JSON.stringify({ status: 'error', message: 'Invalid parameters' }))
 				}
 			}

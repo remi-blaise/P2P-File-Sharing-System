@@ -5,7 +5,7 @@ import { createInterface } from 'readline'
 import { search } from './interface'
 import { read, hashFile } from './files'
 import { sendRegistry } from './files'
-import { invalidate, retrieve, generateMessageID } from './interface'
+import { invalidate, retrieve, generateMessageID, poll } from './interface'
 import { queryhits } from './server'
 import repository from './repository'
 import config from './config'
@@ -49,7 +49,7 @@ function sleep(ms) {
 /**
  * Start client peer
  */
-function start() {
+export function start() {
 	// Add missing files to database
 	read()
 		.then(files => {
@@ -117,6 +117,7 @@ async function showCLI() {
 	console.log(`\n${colors.BRIGHT}1.${colors.RESET} See the list of local files`)
 	console.log(`${colors.BRIGHT}2.${colors.RESET} Download a file`)
 	console.log(`${colors.BRIGHT}3.${colors.RESET} Exit program`)
+	if (config.strategy === 1) console.log(`${colors.BRIGHT}4.${colors.RESET} Refresh downloaded files`)
 
 	const answer = await ask('What do you want to do? ')
 
@@ -124,18 +125,24 @@ async function showCLI() {
 		case 1:
 			// 1. See the list of local files
 			listFiles()
-			break;
+			break
 		case 2:
 			// 2. Download file
 			searchFile()
-			break;
+			break
 		case 3:
 			// 3. Exit program
 			process.exit()
+		case 4:
+			// 4. Refresh all files
+			if (config.strategy === 1) {
+				refreshAll()
+				break
+			}
 		default:
 			// Wrong input: ask again
 			showCLI()
-			break;
+			break
 	}
 }
 
@@ -254,7 +261,8 @@ async function downloadFile(file, i = 0) {
 		process.stdout.write(`\nDownloading from ${peer.ip}:${peer.port}... `)
 
 		try {
-			await retrieve(file.name, peer.ip, peer.port)
+			// Download and add to database
+			const fileEntity = await retrieve(file.name, peer.ip, peer.port)
 
 			// Check that file has the same hash
 			/*try {
@@ -266,6 +274,9 @@ async function downloadFile(file, i = 0) {
 					// Try next peer
 					downloadFile(file, i + 1)
 				} else {*/
+					// Set up timeout
+					if (config.strategy === 1) setRefreshTimeout(fileEntity)
+
 					console.log(`${colors.BRIGHT}${colors.FG_GREEN}File successfully downloaded!${colors.RESET}`)
 					// Back to menu
 					showCLI()
@@ -284,6 +295,43 @@ async function downloadFile(file, i = 0) {
 		// Back to menu
 		showCLI()
 	}
+}
+
+/**
+ * Refresh one file
+ * @param {Object} file - File Sequelize entity
+ */
+async function refresh(file) {
+	const { upToDate, ttr, lastModifiedTime } = await poll(fileName, version, host, port)
+
+	if (upToDate) {
+		// Save new ttr
+		[ file.ttr, file.lastModifiedTime ] = [ ttr, lastModifiedTime ]
+		await file.save()
+	}
+	else {
+		// Delete the entry in the database
+		await file.destroy()
+
+		// Download the new version
+		file = await retrieve(file.name, file.ip, file.port)
+	}
+
+	// Set up timeout
+	setRefreshTimeout(file)
+}
+
+function setRefreshTimeout(file) {
+	setTimeout(() => refresh(file), new Date(file.lastModifiedTime) - (-file.ttr * 1000) - new Date()) // Can elicit stack overflow?
+}
+
+async function refreshAll() {
+	await Promise.all(
+		repository.File.findAll({ where: { owned: false } }).map(refresh)
+	)
+
+	// Back to menu
+	showCLI()
 }
 
 export default { start, printError }

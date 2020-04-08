@@ -7,5 +7,6 @@
 	"keyStorageDir": "keys",
 	"ttl": 10,
 	"queryLifetime": 1000,
-	"strategy": 0
+	"strategy": 0,
+    "ttr": 60
 }

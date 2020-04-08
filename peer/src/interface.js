@@ -12,19 +12,19 @@ import repository from './repository'
  * @param {string} data - Data to be send
  * @returns {Promise} Server response
  */
-function sendData(data) {
+function sendData(data, host = config.indexHost, port = config.indexPort) {
 	// Create connection
 	const client = new Socket()
-	client.connect(config.indexPort, config.indexHost)
+	client.connect(host, port)
 	// Send request
 	client.write(data, err => {
 		if (err) {
-			printError(`Failed to send data to the server (${err.code})`)
+			printError(`Failed to send data (${err.code})`)
 		}
 	})
 	// Wait for response
 	return new Promise((resolve, reject) => {
-		client.on('error', err => reject(new Error(`Cannot connect to the server (${err.code})`)))
+		client.on('error', err => reject(new Error(`Cannot connect (${err.code})`)))
 		client.on('data', data => {
 			try {
 				const response = JSON.parse(data.toString())
@@ -41,7 +41,7 @@ function sendData(data) {
 		})
 		// Timeout if the response is too long
 		setTimeout(() => {
-			const err = new Error('Response not recieved before timeout.')
+			const err = new Error('Response not received before timeout.')
 			reject(err)
 		}, 1000)
 	})
@@ -108,8 +108,25 @@ export function invalidate(messageId, fileName, version) {
 }
 
 /**
+ * Poll the status of a file directly to a peer
+ * @param {string} fileName - Name of the file to invalidate
+ * @param {number} version - New version number of the file
+ * @param {string} host - Hostname of the peer
+ * @param {number} port - Port of the peer
+ */
+export function poll(fileName, version, host = null, port = null) {
+	// Format request as JSON
+	const request = { name: 'poll', parameters: { fileName, version } }
+	// Send request
+	return sendData(JSON.stringify(request), host, port)
+		.catch(err => {
+			printError(`Poll request failed: ${err.message}`)
+		})
+}
+
+/**
  * Retrieve a file from a peer
- * @param {string} file - ID of the file to download
+ * @param {string} file - Name of the file to download
  * @param {string} host - Hostname of the peer
  * @param {number} port - Port of the peer
  */
@@ -131,7 +148,7 @@ export function retrieve(file, host, port) {
 		socket.on('data', chunk => {
 			data += chunk.toString()
 		})
-		socket.on('end', () => {
+		socket.on('end', async () => {
 			// Separate JSON response from file data stream
 			const separatorIndex = data.indexOf(';')
 			const header = data.substring(0, separatorIndex)
@@ -144,12 +161,22 @@ export function retrieve(file, host, port) {
 					// Write content to file
 					const filename = response.data.filename
 					const dest = fs.createWriteStream(path.join(config.downloadDir, filename))
+					// Add to database
+					const file = await repository.File.create({
+						name: filename,
+						version: response.data.version,
+						owned: false,
+						valid: true,
+						ip: response.data.ip,
+						port: response.data.port,
+						ttr: response.data.ttr,
+						lastModifiedTime: response.data.lastModifiedTime,
+					})
+
 					dest.write(content, () => {
 						socket.destroy()
-						resolve()
+						resolve(file)
 					})
-					// Add to database
-					repository.File.create({ name: filename, version: response.data.version, owned: false, valid: true, ip: response.data.ip, port: response.data.port })
 				} else {
 					const err = new Error(response.message || 'Unkown error')
 					reject(err)
