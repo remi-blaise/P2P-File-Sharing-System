@@ -89,7 +89,7 @@ async function createLeafNode(index, port, superPeerPort, strategy, ttr) {
 	config.indexPort = superPeerPort
 	config.port = port
 	config.strategy = strategy
-	config.ttr = strategy === 1 ? ttr : undefined
+	config.ttr = ttr
 	fs.writeFileSync(path.join(leafNodePath, 'config.json'), JSON.stringify(config, null, '\t'))
 
 	// Generate keys
@@ -110,24 +110,17 @@ async function main() {
 	console.log('Which topology do you want to generate?')
 	console.log('1. All-to-all')
 	console.log('2. Linear')
-	const raw = parseInt(await ask('Your choice: (1) '))
-	const topology = raw == 2 ? 2 : 1
+	const rawTopology = parseInt(await ask('Topology: (1) '))
+	const topology = rawTopology == 2 ? 2 : 1
 
-	let strategy
-	while (true) {
-		console.log('What consistency strategy do you want?')
-		console.log('0. The pull-based approach')
-		console.log('1. The push-based approach with leaf-peer cache')
-		console.log('2. The push-based approach with superpeer cache')
-		strategy = parseInt(await ask('Strategy: '))
-		if (strategy != 0 && strategy != 1 && strategy != 2) {
-			console.error("Invalid strategy, please choose one!")
-		} else {
-			break
-		}
-	}
+	console.log('Which consistency strategy do you want?')
+	console.log('0. The push-based approach')
+	console.log('1. The pull-based approach with leaf-node cache')
+	console.log('2. The pull-based approach with super-peer cache')
+	const rawStrategy = parseInt(await ask('Strategy: (0) '))
+	const strategy = (rawStrategy == 2 || rawStrategy == 1) ? rawStrategy : 0
 
-	const ttr = 1 <= strategy ? parseInt(await ask('Choose the ttr (sec): (60) ')) || 60 : undefined
+	const ttr = (strategy >= 1) ? parseInt(await ask('Choose the time-to-refresh (sec): (60) ')) || 60 : undefined
 
 	// Clean target directory
 	process.stdout.write('\nCleaning old peers... ')
