@@ -41,6 +41,7 @@ async function createSuperPeers(number, leafNodes, topology, strategy, ttr) {
 		config.port = superPeerPort
 		config.leafNodes = peers
 		config.strategy = strategy
+		config.ttr = strategy === 2 ? ttr : undefined
 		fs.writeFileSync(path.join(superPeerPath, 'config.json'), JSON.stringify(config, null, '\t'))
 
 		// Install dependencies
@@ -88,7 +89,7 @@ async function createLeafNode(index, port, superPeerPort, strategy, ttr) {
 	config.indexPort = superPeerPort
 	config.port = port
 	config.strategy = strategy
-	config.ttr = ttr
+	config.ttr = strategy === 1 ? ttr : undefined
 	fs.writeFileSync(path.join(leafNodePath, 'config.json'), JSON.stringify(config, null, '\t'))
 
 	// Generate keys
@@ -126,11 +127,7 @@ async function main() {
 		}
 	}
 
-	let ttr
-	if (strategy === 1) {
-		ttr = parseInt(await ask('Choose the ttr (sec): (60) '))
-		if (ttr === NaN) ttr = 60
-	}
+	const ttr = 1 <= strategy ? parseInt(await ask('Choose the ttr (sec): (60) ')) || 60 : undefined
 
 	// Clean target directory
 	process.stdout.write('\nCleaning old peers... ')
