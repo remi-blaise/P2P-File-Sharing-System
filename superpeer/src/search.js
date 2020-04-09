@@ -57,15 +57,14 @@ async function refresh(file, leafIp, leafPort) {
     const responses = await Promise.all(
         config.neighbors.map(neighbor => poll(neighbor.ip, neighbor.port, file.name, file.version))
     )
+    .map(({ outOfDate }) => outOfDate)
 
-    responses.forEach(({ outOfDate }) => {
-        if (outOfDate) {
-            invalidate(leafIp, leafPort, 0, file.name, file.version)
-        }
-    })
-
-    // Set up timeout
-    setRefreshTimeout(file)
+    if (responses.any()) {
+        invalidate(leafIp, leafPort, 0, file.name, file.version)
+    } else {
+        // Set up timeout
+        setRefreshTimeout(file)
+    }
 }
 
 export function setRefreshTimeout(file, leafIp, leafPort) {
