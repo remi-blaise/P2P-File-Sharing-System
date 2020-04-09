@@ -6,7 +6,7 @@
  * @author Rémi Blaise <hello@remi-blaise.com>
  */
 
-import { search, queryhit, invalidate } from './interface'
+import { search, queryhit, invalidate, poll } from './interface'
 import { retrieveFiles } from './repository'
 import config from './config'
 
@@ -47,4 +47,27 @@ export async function propagateInvalidate(parameters) {
     .forEach(leafnode =>
         invalidate(leafnode.ip, leafnode.port, parameters.messageId, parameters.fileName, parameters.version)
     )
+}
+
+/**
+ * Refresh one file
+ * @param {Object} file - File Sequelize entity
+ */
+async function refresh(file, leafIp, leafPort) {
+    const responses = await Promise.all(
+        config.neighbors.map(neighbor => poll(neighbor.ip, neighbor.port, file.name, file.version))
+    )
+
+    responses.forEach(({ outOfDate }) => {
+        if (outOfDate) {
+            invalidate(leafIp, leafPort, 0, file.name, file.version)
+        }
+    })
+
+    // Set up timeout
+    setRefreshTimeout(file)
+}
+
+export function setRefreshTimeout(file, leafIp, leafPort) {
+    setTimeout(() => refresh(file, leafIp, leafPort), file.ttr * 1000) // Can elicit stack overflow?
 }

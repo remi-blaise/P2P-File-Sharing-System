@@ -16,5 +16,6 @@
             "port": 1234
         }
     ],
-    "strategy": 0
+    "strategy": 0,
+    "ttr": 60
 }

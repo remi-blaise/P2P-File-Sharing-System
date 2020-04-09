@@ -11,8 +11,8 @@ import { isPort, isIP, isHash, isInt } from 'validator'
 import crypto from 'crypto'
 import fs from 'fs'
 import config from './config'
-import { registerPeer, logMessage, getMessageSender, flushMessages } from './repository'
-import { localSearch, propagateSearch, propagateInvalidate } from './search'
+import { registerPeer, logMessage, getMessageSender, flushMessages, getDownloadedFile } from './repository'
+import { localSearch, propagateSearch, propagateInvalidate, setRefreshTimeout } from './search'
 import { queryhit as clientQueryhit } from './interface'
 
 // Utility function
@@ -46,6 +46,18 @@ async function registry(parameters) {
         //if (typeof file.hash !== 'string' || !isHash(file.hash, 'sha1')) throw 'file #' + index + "'s hash is not a valid sha-1 hash."
         if (typeof file.name !== 'string') throw 'file #' + index + "'s name should be a string."
         //if (typeof file.size !== 'number' || !isInt(file.size.toString())) throw 'file #' + index + "'s size should be an int in byte."
+
+        if (config.strategy === 2) {
+            checkForParameter('version', file)
+            if (typeof file.version !== 'number' || !isInt(file.version.toString())) throw "version should be a integer."
+            checkForParameter('ttr', file)
+            checkForParameter('owned', file)
+            if (file.owned) {
+                if (file.ttr !== null) throw "ttr should be null for owned files"
+            } else {
+                if (typeof file.ttr !== 'number' || !isInt(file.ttr.toString())) throw "ttr should be an integer for not owned files."
+            }
+        }
     })
 
     const matchingLeafs = config.leafNodes.filter(leaf => leaf.ip === parameters.ip && leaf.port === parameters.port)
@@ -75,6 +87,14 @@ async function registry(parameters) {
         leafPeer,
         parameters.files
     )
+
+    // 4. Register poll timeout
+
+    if (config.strategy === 2) {
+        parameters.files
+            .filter(file => file.owned === false)
+            .forEach(file => setRefreshTimeout(file, leafIp, leafPort))
+    }
 }
 
 /**
@@ -191,9 +211,39 @@ function invalidate(parameters) {
     return null
 }
 
+/**
+ * The invalidate procedure
+ * @param {object} parameters
+ * @return {any} data
+ */
+function poll(parameters) {
+    if (config.strategy !== 2) throw "Configure the server with strategy === 2 to use poll()"
+
+    // 1. Validate parameters
+
+    checkForParameter('fileName', parameters)
+    if (typeof parameters.fileName !== 'string') throw "fileName should be a string."
+    checkForParameter('version', parameters)
+    if (typeof parameters.version !== 'number' || !isInt(parameters.version.toString())) throw "version should be a integer."
+
+    // 2. Check file version
+
+    const file = getDownloadedFile(parameters.fileName)
+
+    if (!file) return {
+        outOfDate: false,
+        notFound: true,
+    }
+
+    return {
+        outOfDate: parameters.version < file.version,
+    }
+}
+
 export default {
     registry,
     search,
     queryhit,
-    invalidate
+    invalidate,
+    poll
 }

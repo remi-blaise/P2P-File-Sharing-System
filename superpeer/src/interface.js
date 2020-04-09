@@ -105,3 +105,17 @@ export function invalidate(host, port, messageId, fileName, version) {
 	// Send request
 	return sendData(host, port, JSON.stringify(request))
 }
+
+/**
+ * Poll the status of a file directly to a peer
+ * @param {string} fileName - Name of the file to invalidate
+ * @param {number} version - New version number of the file
+ * @param {string} host - Hostname of the peer
+ * @param {number} port - Port of the peer
+ */
+export function poll(host, port, fileName, version) {
+	// Format request as JSON
+	const request = { name: 'poll', parameters: { fileName, version } }
+	// Send request
+	return sendData(host, port, JSON.stringify(request))
+}

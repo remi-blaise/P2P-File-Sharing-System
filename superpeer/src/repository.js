@@ -82,6 +82,13 @@ export function retrieveFiles(fileName) {
     return files.filter(file => file.name.includes(fileName))
 }
 
+/**
+ * Get a memorized file
+ */
+export function getDownloadedFile(fileName) {
+    return files.find(file => file.name === fileName && !file.owned)
+}
+
 /****** MESSAGES ******/
 
 /**

@@ -36,7 +36,7 @@ const File = sequelize.define('file', {
         type: Sequelize.BOOLEAN
     },
 
-    // Specific to strategy 1, peer-client
+    // Specific to strategy 1 and 2, peer-client
     ttr: {
         type: Sequelize.NUMBER
     },

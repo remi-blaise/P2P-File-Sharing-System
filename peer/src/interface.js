@@ -144,11 +144,8 @@ export function retrieve(file, host, port) {
 	// Get response
 	return new Promise((resolve, reject) => {
 		let data = ''
-		let ip, port
 		socket.on('error', err => reject(new Error(`Cannot connect to the peer (${err.code})`)))
 		socket.on('data', chunk => {
-			ip = socket.remoteAddress
-			port = socket.remotePort
 			data += chunk.toString()
 		})
 		socket.on('end', async () => {
@@ -170,7 +167,7 @@ export function retrieve(file, host, port) {
 						version: response.data.version,
 						owned: false,
 						valid: true,
-						ip,
+						ip: host,
 						port,
 						ttr: response.data.ttr,
 						lastModifiedTime: response.data.lastModifiedTime,
