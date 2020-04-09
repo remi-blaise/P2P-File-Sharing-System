@@ -16,7 +16,7 @@ const server = net.createServer(socket => {
 			// Parse request
 			const request = JSON.parse(data.toString())
 			// Identify retrieve request
-			if (request.name == 'retrieve') {
+			if (request.name === 'retrieve') {
 				repository.File.findOne({ where: { name: request.parameters.fileName, owned: true } })
 					.then(file => {
 						if (file == null) {
@@ -26,11 +26,10 @@ const server = net.createServer(socket => {
 						} else {
 							console.log(`${colors.FG_MAGENTA}File requested: ${colors.FG_CYAN}${file.name}${colors.RESET}`)
 							// Send requested file
+							const serverAddress = server.address()
 							socket.write(JSON.stringify({ status: 'success', data: {
 								filename: file.name,
 								version: file.version,
-								ip: file.ip,
-								port: file.port,
 								ttr: config.ttr,
 								lastModifiedTime: (new Date()).toISOString(),
 							} }) + ';')
@@ -38,7 +37,7 @@ const server = net.createServer(socket => {
 							stream.pipe(socket)
 						}
 					})
-			} else if (request.name == 'queryhit') {
+			} else if (request.name === 'queryhit') {
 				if (request.parameters.messageId != undefined && request.parameters.fileName != undefined && request.parameters.ip != undefined && request.parameters.port != undefined) {
 					const hit = { fileName: request.parameters.fileName, ip: request.parameters.ip, port: request.parameters.port }
 					if (queryhits.hasOwnProperty(request.parameters.messageId)) {
@@ -48,10 +47,10 @@ const server = net.createServer(socket => {
 					}
 					socket.write(JSON.stringify({ status: 'success', data: null }))
 				} else {
-					console.log(`${colors.FG_RED}Received queryhit with invalid paramers${colors.RESET}`)
+					console.log(`${colors.FG_RED}Received invalid paramers${colors.RESET}`, request.parameters)
 					socket.write(JSON.stringify({ status: 'error', message: 'Invalid parameters' }))
 				}
-			} else if (request.name = 'invalidate') {
+			} else if (request.name === 'invalidate') {
 				if (request.parameters.messageId != undefined && request.parameters.fileName != undefined && request.parameters.version != undefined && request.parameters.ip != undefined && request.parameters.port != undefined) {
 					repository.File.findOne({ where: { name: request.parameters.fileName } })
 						.then(file => {
@@ -63,18 +62,19 @@ const server = net.createServer(socket => {
 						.catch(err => console.error(err))
 					socket.write(JSON.stringify({ status: 'success', data: null }))
 				} else {
-					console.log(`${colors.FG_RED}Received invalid paramers${colors.RESET}`)
+					console.log(`${colors.FG_RED}Received invalid paramers${colors.RESET}`, request.parameters)
 					socket.write(JSON.stringify({ status: 'error', message: 'Invalid parameters' }))
 				}
-			} else if (request.name = 'poll') {
+			} else if (request.name === 'poll') {
 				if (config.strategy !== 1) {
 					console.log(`${colors.FG_RED}Set strategy to ${colors.RESET}`)
 					socket.write(JSON.stringify({ status: 'error', message: 'Unknown file, it may have been deleted?' }))
 				}
 
 				if (request.parameters.fileName != undefined && request.parameters.version != undefined) {
+					let file
 					try {
-						const file = await repository.File.findOne({ where: { name: request.parameters.fileName } })
+						file = await repository.File.findOne({ where: { name: request.parameters.fileName } })
 					} catch (err) {
 						console.log(`${colors.FG_RED}Error reading database${colors.RESET}`)
 						socket.write(JSON.stringify({ status: 'error', message: 'Error reading database$' }))
@@ -90,7 +90,7 @@ const server = net.createServer(socket => {
 						lastModifiedTime: (new Date()).toISOString(),
 					} }))
 				} else {
-					console.log(`${colors.FG_RED}Received invalid paramers${colors.RESET}`)
+					console.log(`${colors.FG_RED}Received invalid paramers: ${colors.RESET}`, request.parameters)
 					socket.write(JSON.stringify({ status: 'error', message: 'Invalid parameters' }))
 				}
 			}

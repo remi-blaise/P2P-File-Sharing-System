@@ -15,7 +15,7 @@ import repository from './repository'
 function sendData(data, host = config.indexHost, port = config.indexPort) {
 	// Create connection
 	const client = new Socket()
-	client.connect(host, port)
+	client.connect(port, host)
 	// Send request
 	client.write(data, err => {
 		if (err) {
@@ -144,8 +144,11 @@ export function retrieve(file, host, port) {
 	// Get response
 	return new Promise((resolve, reject) => {
 		let data = ''
+		let ip, port
 		socket.on('error', err => reject(new Error(`Cannot connect to the peer (${err.code})`)))
 		socket.on('data', chunk => {
+			ip = socket.remoteAddress
+			port = socket.remotePort
 			data += chunk.toString()
 		})
 		socket.on('end', async () => {
@@ -167,8 +170,8 @@ export function retrieve(file, host, port) {
 						version: response.data.version,
 						owned: false,
 						valid: true,
-						ip: response.data.ip,
-						port: response.data.port,
+						ip,
+						port,
 						ttr: response.data.ttr,
 						lastModifiedTime: response.data.lastModifiedTime,
 					})

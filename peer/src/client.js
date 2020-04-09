@@ -302,7 +302,7 @@ async function downloadFile(file, i = 0) {
  * @param {Object} file - File Sequelize entity
  */
 async function refresh(file) {
-	const { upToDate, ttr, lastModifiedTime } = await poll(fileName, version, host, port)
+	const { upToDate, ttr, lastModifiedTime } = await poll(file.name, file.version, file.ip, file.port)
 
 	if (upToDate) {
 		// Save new ttr

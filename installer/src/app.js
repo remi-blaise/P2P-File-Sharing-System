@@ -11,7 +11,7 @@ const SP_SRC_DIR = '../superpeer'
 const LN_SRC_DIR = '../peer'
 const IP_ADDR = ip.address()
 
-async function createSuperPeers(number, leafNodes, topology, strategy) {
+async function createSuperPeers(number, leafNodes, topology, strategy, ttr) {
 	var superPeers = []
 
 	for (let i = 0; i < number; i++) {
@@ -26,7 +26,7 @@ async function createSuperPeers(number, leafNodes, topology, strategy) {
 		for (let j = 0; j < leafNodes; j++) {
 			portCounter++
 			process.stdout.write(`Leaf node #${j + 1}... `)
-			await createLeafNode(`${i}${j}`, portCounter, superPeerPort, strategy)
+			await createLeafNode(`${i}${j}`, portCounter, superPeerPort, strategy, ttr)
 			// Copy public key to super-peer
 			fs.copyFileSync(path.join(TARGET_DIR, `leafnode${i}${j}`, 'keys', 'publicKey.pem'), path.join(superPeerPath, 'keys', `${j}.pem`))
 			peers.push({ ip: IP_ADDR, port: portCounter })
@@ -76,7 +76,7 @@ async function createSuperPeers(number, leafNodes, topology, strategy) {
 	console.log(`${colors.BRIGHT}${colors.FG_GREEN}Done!${colors.RESET}`)
 }
 
-async function createLeafNode(index, port, superPeerPort, strategy) {
+async function createLeafNode(index, port, superPeerPort, strategy, ttr) {
 	const leafNodePath = path.join(TARGET_DIR, `leafnode${index}`)
 
 	copyFolderRecursive(LN_SRC_DIR, leafNodePath)
@@ -88,6 +88,7 @@ async function createLeafNode(index, port, superPeerPort, strategy) {
 	config.indexPort = superPeerPort
 	config.port = port
 	config.strategy = strategy
+	config.ttr = ttr
 	fs.writeFileSync(path.join(leafNodePath, 'config.json'), JSON.stringify(config, null, '\t'))
 
 	// Generate keys
@@ -125,6 +126,12 @@ async function main() {
 		}
 	}
 
+	let ttr
+	if (strategy === 1) {
+		ttr = parseInt(await ask('Choose the ttr (sec): (60) '))
+		if (ttr === NaN) ttr = 60
+	}
+
 	// Clean target directory
 	process.stdout.write('\nCleaning old peers... ')
 	if (fs.existsSync(TARGET_DIR)) {
@@ -133,7 +140,7 @@ async function main() {
 	fs.mkdirSync(TARGET_DIR)
 	console.log(`${colors.BRIGHT}${colors.FG_GREEN}Done!${colors.RESET}`)
 
-	await createSuperPeers(superPeers, leafNodes, topology, strategy)
+	await createSuperPeers(superPeers, leafNodes, topology, strategy, ttr)
 
 	console.log('\nBye!')
 	process.exit()
