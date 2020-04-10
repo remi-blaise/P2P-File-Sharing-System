@@ -67,12 +67,16 @@ export function start() {
 		.catch(err => console.error(err))
 
 	// Watch shared directory changes
-	fs.watch(config.sharedDir, (_, filename) => {
+	fs.watch(config.sharedDir, (event, filename) => {
 		repository.File.findOne({ where: { name: filename, owned: true } })
 			.then(async file => {
 				if (file != null) {
-					file.version += 1
-					file.save()
+					if (event == 'rename' && !fs.existsSync(path.join(config.sharedDir, filename))) {
+						file.destroy()
+					} else {
+						file.version += 1
+						file.save()
+					}
 
 					// Invalidate request
 					if (config.strategy === 0 || config.strategy === 2) invalidate(await generateMessageID(), file.name, file.version)
