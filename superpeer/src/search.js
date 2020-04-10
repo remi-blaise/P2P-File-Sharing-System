@@ -54,12 +54,12 @@ export async function propagateInvalidate(parameters) {
  * @param {Object} file - File Sequelize entity
  */
 async function refresh(file, leafIp, leafPort) {
-    const responses = await Promise.all(
+    const responses = (await Promise.all(
         config.neighbors.map(neighbor => poll(neighbor.ip, neighbor.port, file.name, file.version))
-    )
+    ))
     .map(({ outOfDate }) => outOfDate)
 
-    if (responses.any()) {
+    if (responses.some(item => item)) {
         invalidate(leafIp, leafPort, 0, file.name, file.version)
     } else {
         // Set up timeout

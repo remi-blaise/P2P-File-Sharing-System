@@ -158,9 +158,7 @@ export function retrieve(file, host, port) {
 				const response = JSON.parse(header)
 
 				if (response.status == 'success') {
-					// Write content to file
 					const filename = response.data.filename
-					const dest = fs.createWriteStream(path.join(config.downloadDir, filename))
 					// Add to database
 					const file = await repository.File.create({
 						name: filename,
@@ -172,6 +170,8 @@ export function retrieve(file, host, port) {
 						ttr: response.data.ttr,
 						lastModifiedTime: response.data.lastModifiedTime,
 					})
+					// Write content to file
+					const dest = fs.createWriteStream(path.join(config.downloadDir, filename))
 
 					dest.write(content, () => {
 						socket.destroy()

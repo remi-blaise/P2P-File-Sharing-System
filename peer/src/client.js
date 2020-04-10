@@ -75,7 +75,7 @@ export function start() {
 					file.save()
 
 					// Invalidate request
-					if (config.strategy === 0) invalidate(await generateMessageID(), file.name, file.version)
+					if (config.strategy === 0 || config.strategy === 2) invalidate(await generateMessageID(), file.name, file.version)
 				} else {
 					File.create({ name: filename, owned: true })
 						.catch(err => console.error(err))

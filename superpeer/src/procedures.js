@@ -11,7 +11,7 @@ import { isPort, isIP, isHash, isInt } from 'validator'
 import crypto from 'crypto'
 import fs from 'fs'
 import config from './config'
-import { registerPeer, logMessage, getMessageSender, flushMessages, getDownloadedFile } from './repository'
+import { registerPeer, logMessage, getMessageSender, flushMessages, getDownloadedFile, updateFileVersion } from './repository'
 import { localSearch, propagateSearch, propagateInvalidate, setRefreshTimeout } from './search'
 import { queryhit as clientQueryhit } from './interface'
 
@@ -93,7 +93,7 @@ async function registry(parameters) {
     if (config.strategy === 2) {
         parameters.files
             .filter(file => file.owned === false)
-            .forEach(file => setRefreshTimeout(file, leafIp, leafPort))
+            .forEach(file => setRefreshTimeout(file, leafPeer.ip, leafPeer.port))
     }
 }
 
@@ -150,7 +150,7 @@ async function queryhit(parameters) {
     // 1. Validate parameters
 
     checkForParameter('messageId', parameters)
-   if (typeof parameters.messageId !== 'string') throw "messageId should be a string."
+    if (typeof parameters.messageId !== 'string') throw "messageId should be a string."
     checkForParameter('fileName', parameters)
     if (typeof parameters.fileName !== 'string') throw "fileName should be a string."
     checkForParameter('ip', parameters)
@@ -190,23 +190,27 @@ function invalidate(parameters) {
     checkForParameter('port', parameters)
     if (typeof parameters.port !== 'number') throw "port should be a number."
 
-    // 2. Ignore if the message was already received
+    if (config.strategy === 0) { // Push-based approach
+        // 2. Ignore if the message was already received
 
-    if (getMessageSender(parameters.messageId) != undefined) {
-        return null
+        if (getMessageSender(parameters.messageId) != undefined) {
+            return null
+        }
+
+        // 3. Log the message
+
+        logMessage(parameters.messageId, parameters.ip, parameters.port)
+
+        // 4. Propagate request
+
+        propagateInvalidate(parameters)
+
+        // 5. Flush log
+
+        flushMessages()
+    } else if (config.strategy === 2) { // Pull-based approach with super-peer cache
+        updateFileVersion(parameters.fileName, parameters.version)
     }
-
-    // 3. Log the message
-
-    logMessage(parameters.messageId, parameters.ip, parameters.port)
-
-    // 4. Propagate request
-
-    propagateInvalidate(parameters)
-
-    // 5. Flush log
-
-    flushMessages()
 
     return null
 }

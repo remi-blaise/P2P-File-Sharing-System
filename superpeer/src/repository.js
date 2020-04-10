@@ -76,6 +76,8 @@ export function registerPeer(peer, peerFiles) {
 
 /**
  * Retrieve all peers having a file
+ * @param {string} fileName - Name of the file
+ * @return Files
  */
 export function retrieveFiles(fileName) {
     // Search for file with corresponding file names
@@ -84,9 +86,20 @@ export function retrieveFiles(fileName) {
 
 /**
  * Get a memorized file
+ * @param {string} fileName - Name of the file
+ * @return File
  */
 export function getDownloadedFile(fileName) {
-    return files.find(file => file.name === fileName && !file.owned)
+    return files.find(file => file.name === fileName)
+}
+
+/**
+ * Update the version number of a specific file
+ * @param {string} fileName - Name of the file to update
+ * @param {number} version - New version number
+ */
+export function updateFileVersion(fileName, version) {
+    files[files.findIndex(file => file.name === fileName)].version = version
 }
 
 /****** MESSAGES ******/
