@@ -14,5 +14,6 @@
             "ip": "X.X.X.X",
             "port": 1234
         }
-    ]
+    ],
+	"debugRSA": true
 }

@@ -11,11 +11,12 @@
   "author": "Florentin Bekier & Rémi Blaise",
   "license": "ISC",
   "dependencies": {
+    "big-integer": "^1.6.48",
     "esm": "^3.2.25",
     "ip": "^1.1.5",
+    "keypair": "^1.0.1",
     "promise-fs": "^2.1.1",
-    "sequelize": "^5.21.6",
-    "sqlite3": "^4.1.1",
-    "uuid": "^3.4.0"
+    "sequelize": "^5.21.7",
+    "sqlite3": "^4.1.1"
   }
 }

@@ -8,16 +8,39 @@
  */
 
 import { isPort, isIP } from 'validator'
-import crypto from 'crypto'
-import fs from 'fs'
 import config from './config'
 import { registerPeer, logMessage, getMessageSender, flushMessages } from './repository'
 import { localSearch, propagateSearch, propagateInvalidate } from './search'
 import { queryhit as clientQueryhit } from './interface'
+import { pemPublicKey } from './rsa/rsa-keypair'
+import keystore from './keystore'
 
 // Utility function
 function checkForParameter(name, parameters) {
     if (!(name in parameters)) throw name + ' parameter is missing.'
+}
+
+/**
+ * The pks (public key sharing) procedure
+ * @param {object} parameters
+ * @return {any} data
+ */
+async function pks(parameters) {
+    // 1. Validate parameters
+
+    checkForParameter('id', parameters)
+    checkForParameter('key', parameters)
+
+    if (typeof parameters.id !== 'string') throw "id should be a string."
+    if (typeof parameters.key !== 'string') throw "key should be a string."
+
+    // 2. Persist key
+
+    keystore.setKey(parameters.id, parameters.key)
+
+    // 3. Reply with public key
+
+    return pemPublicKey()
 }
 
 /**
@@ -28,12 +51,10 @@ function checkForParameter(name, parameters) {
 async function registry(parameters) {
     // 1. Validate parameters
 
-    checkForParameter('ip', parameters)
-    checkForParameter('port', parameters)
+    checkForParameter('id', parameters)
     checkForParameter('files', parameters)
 
-    if (typeof parameters.ip !== 'string' || !isIP(parameters.ip)) throw "Bad ip."
-    if (typeof parameters.port !== 'number' || !isPort(parameters.port.toString())) throw "Bad port."
+    if (typeof parameters.id !== 'string') throw "id shoud be a string."
     if (!Array.isArray(parameters.files)) throw "Files should be an array."
 
     parameters.files.forEach((file, index) => {
@@ -46,7 +67,10 @@ async function registry(parameters) {
         //if (typeof file.size !== 'number' || !isInt(file.size.toString())) throw 'file #' + index + "'s size should be an int in byte."
     })
 
-    const matchingLeafs = config.leafNodes.filter(leaf => leaf.ip === parameters.ip && leaf.port === parameters.port)
+    const idArr = parameters.id.split(':')
+    const ip = idArr[0]
+    const port = parseInt(idArr[1])
+    const matchingLeafs = config.leafNodes.filter(leaf => leaf.ip === ip && leaf.port === port)
     if (matchingLeafs.length !== 1) throw "Unknow leaf node in config."
     const leafPeer = matchingLeafs[0]
 
@@ -68,16 +92,14 @@ async function registry(parameters) {
 async function search(parameters) {
     // 1. Validate parameters
 
+    checkForParameter('id', parameters)
     checkForParameter('messageId', parameters)
     checkForParameter('ttl', parameters)
     checkForParameter('fileName', parameters)
-    checkForParameter('ip', parameters)
-    checkForParameter('port', parameters)
+    if (typeof parameters.id !== 'string') throw "id should be a string."
     if (typeof parameters.messageId !== 'string') throw "messageId should be a string."
     if (typeof parameters.ttl !== 'number') throw "ttl should be a number."
     if (typeof parameters.fileName !== 'string') throw "fileName should be a string."
-    if (typeof parameters.ip !== 'string') throw "ip should be a string."
-    if (typeof parameters.port !== 'number') throw "port should be a string."
 
     // 2. Ignore if the message was already received
 
@@ -85,13 +107,17 @@ async function search(parameters) {
         return null
     }
 
+    const idArr = parameters.id.split(':')
+    const ip = idArr[0]
+    const port = parseInt(idArr[1])
+
     // 3. Start local search
 
-    localSearch(parameters.messageId, parameters.fileName, parameters.ip, parameters.port)
+    localSearch(parameters.messageId, parameters.fileName, ip, port)
 
     // 4. Log the message
 
-    logMessage(parameters.messageId, parameters.ip, parameters.port)
+    logMessage(parameters.messageId, ip, port)
 
     // 5. Propagate request
 
@@ -175,6 +201,7 @@ function invalidate(parameters) {
 }
 
 export default {
+    pks,
     registry,
     search,
     queryhit,

@@ -5,10 +5,10 @@
     "dump-client": "node -r esm dump-client.js"
   },
   "dependencies": {
+    "big-integer": "^1.6.48",
     "esm": "^3.2.25",
     "ip": "^1.1.5",
-    "sequelize": "^5.21.3",
-    "sqlite3": "^4.1.1",
+    "keypair": "^1.0.1",
     "validator": "^12.2.0"
   }
 }

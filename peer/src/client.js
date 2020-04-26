@@ -2,10 +2,10 @@ import fs from 'promise-fs'
 import ip from 'ip'
 import path from 'path'
 import { createInterface } from 'readline'
-import { search } from './interface'
-import { read, hashFile } from './files'
+import { shareKey, search } from './interface'
+import { read } from './files'
 import { sendRegistry } from './files'
-import { invalidate, retrieve, generateMessageID, poll } from './interface'
+import { invalidate, retrieve, generateMessageID } from './interface'
 import { queryhits } from './server'
 import repository from './repository'
 import config from './config'
@@ -50,7 +50,7 @@ function sleep(ms) {
  * Start client peer
  */
 export function start() {
-	// Add missing files to database
+	// Add missing files to database and send registry
 	read()
 		.then(files => {
 			return repository.sequelize

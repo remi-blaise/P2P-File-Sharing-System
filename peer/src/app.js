@@ -3,6 +3,8 @@ import client from './client'
 import server from './server'
 import config from './config'
 import colors from './colors'
+import { shareKey } from './interface'
+import { generateKeyPairIfNotExists } from './rsa/rsa-keypair'
 
 console.log(`${colors.DIM}Listening port: ${config.port}${colors.RESET}`)
 
@@ -18,14 +20,10 @@ if (!fs.existsSync(config.downloadDir)) {
 	console.log(`Downloads directory created at path ${config.downloadDir}`)
 }
 
-// Create key storage directory if doesn't exist
-if (!fs.existsSync(config.keyStorageDir)) {
-	fs.mkdirSync(config.keyStorageDir)
-	console.log(`Key storage directory created at path ${config.keyStorageDir}`)
-}
-
-// Client-side
-client.start()
+// Generate key pair if necessary
+generateKeyPairIfNotExists()
+	.then(() => shareKey()) // Share key with superpeer
+	.then(() => client.start()) // Client-side
 
 // Server-side
 server.start()

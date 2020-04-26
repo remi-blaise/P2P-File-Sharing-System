@@ -1,5 +1,4 @@
 import path from 'path'
-import ip from 'ip'
 import fs from 'promise-fs'
 import crypto from 'crypto'
 import { Op } from 'sequelize'
@@ -56,6 +55,6 @@ export async function read(downloaded = false) {
 export function sendRegistry() {
 	repository.File.findAll({ where: { [Op.or]: [{ valid: true }, { owned: true }] } })
 		.then(files => {
-			registry(ip.address(), config.port, files)
+			registry(files)
 		})
 }

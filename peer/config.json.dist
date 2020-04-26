@@ -6,5 +6,6 @@
 	"downloadDir": "downloads",
 	"keyStorageDir": "keys",
 	"ttl": 10,
-	"queryLifetime": 1000
+	"queryLifetime": 1000,
+	"debugRSA": true
 }

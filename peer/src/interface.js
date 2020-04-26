@@ -3,31 +3,56 @@ import ip from 'ip'
 import path from 'path'
 import { Socket } from 'net'
 import crypto from 'crypto'
+import rsa from './rsa/rsa'
 import config from './config'
+import { pemPublicKey, readPrivateKey } from './rsa/rsa-keypair'
 import { printError } from './client'
 import repository from './repository'
+import keystore from './keystore'
+
+const id = ip.address() + ':' + config.port
 
 /**
  * Send data to the index server
  * @param {string} data - Data to be send
  * @returns {Promise} Server response
  */
-function sendData(data, host = config.indexHost, port = config.indexPort) {
+function sendData(data, encrypted = true, host = config.indexHost, port = config.indexPort) {
 	// Create connection
 	const client = new Socket()
 	client.connect(port, host)
-	// Send request
-	client.write(data, err => {
-		if (err) {
-			printError(`Failed to send data (${err.code})`)
-		}
-	})
+
+	if (encrypted) {
+		// Encrypt message using RSA
+		const key = rsa.importKey(keystore.getKey(`${host}:${port}`))
+		if (config.debugRSA) console.log('Plain text message:', data)
+		const cypher = rsa.encryptText(data, key)
+		if (config.debugRSA) console.log('Cyphertext:', cypher)
+		// Send request
+		client.write(cypher, err => {
+			if (err) {
+				printError(`Failed to send data (${err.code})`)
+			}
+		})
+	} else {
+		// Plain text message
+		// Send request
+		client.write(data, err => {
+			if (err) {
+				printError(`Failed to send data (${err.code})`)
+			}
+		})
+	}
+
 	// Wait for response
 	return new Promise((resolve, reject) => {
 		client.on('error', err => reject(new Error(`Cannot connect (${err.code})`)))
-		client.on('data', data => {
+		client.on('data', async data => {
 			try {
-				const response = JSON.parse(data.toString())
+				if (config.debugRSA) console.log('Encrypted response:', data.toString())
+				const key = await readPrivateKey()
+				const response = JSON.parse(rsa.decryptText(data.toString(), key))
+				if (config.debugRSA) console.log('Decrypted response:', response)
 				if (response.status == 'success') {
 					resolve(response.data)
 				} else {
@@ -47,33 +72,34 @@ function sendData(data, host = config.indexHost, port = config.indexPort) {
 	})
 }
 
+export async function shareKey() {
+	const key = await pemPublicKey()
+	// Format request as JSON
+	const request = { name: 'pks', parameters: { id, key } }
+	// Send request
+	sendData(JSON.stringify(request), false)
+		.then(data => {
+			keystore.setKey(`${config.indexHost}:${config.indexPort}`, data)
+		})
+		.catch(err => {
+			printError(`Registry request failed: ${err.message}`)
+		})
+}
+
 /**
  * Register the peer to the index server
  * @param {string} host - Hostname of the peer
  * @param {number} port - Port of the peer server
  * @param {object[]} files - File list of the peer
  */
-export async function registry(host, port, files) {
-	const privateKeyFilename = config.keyStorageDir + '/privateKey.pem'
+export async function registry(files) {
 	// Format request as JSON
-	const request = { name: 'registry', parameters: { ip: host, port: port, files: files } }
-	// Read keys
-	/* try {
-		const privateKey = await fs.readFile(privateKeyFilename)
-		// Sign request
-		const sign = crypto.createSign('SHA256')
-		sign.write(JSON.stringify(request))
-		sign.end()
-		const signature = sign.sign(privateKey, 'hex')
-		request.parameters.signature = signature
-		// Send request
-		sendData(JSON.stringify(request))
-			.catch(err => {
-				printError(`Registry request failed: ${err.message}`)
-			})
-	} catch (e) {
-		printError('One of your keys is missing, please execute `npm run generate-keys` to generate your keys', true)
-	} */
+	const request = { name: 'registry', parameters: { id, files: files } }
+	// Send request
+	sendData(JSON.stringify(request))
+		.catch(err => {
+			printError(`Registry request failed: ${err.message}`)
+		})
 }
 
 /**
@@ -83,7 +109,7 @@ export async function registry(host, port, files) {
  */
 export function search(messageId, fileName) {
 	// Format request as JSON
-	const request = { name: 'search', parameters: { messageId, ttl: config.ttl, fileName, ip: ip.address(), port: config.port } }
+	const request = { name: 'search', parameters: { id, messageId, ttl: config.ttl, fileName } }
 	// Send request
 	return sendData(JSON.stringify(request))
 		.catch(err => {
@@ -99,28 +125,11 @@ export function search(messageId, fileName) {
  */
 export function invalidate(messageId, fileName, version) {
 	// Format request as JSON
-	const request = { name: 'invalidate', parameters: { messageId, ip: ip.address(), port: config.port, fileName, version } }
+	const request = { name: 'invalidate', parameters: { id, messageId, fileName, version, ip: ip.address(), port: config.port } }
 	// Send request
 	return sendData(JSON.stringify(request))
 		.catch(err => {
 			printError(`Invalidate request failed: ${err.message}`)
-		})
-}
-
-/**
- * Poll the status of a file directly to a peer
- * @param {string} fileName - Name of the file to invalidate
- * @param {number} version - New version number of the file
- * @param {string} host - Hostname of the peer
- * @param {number} port - Port of the peer
- */
-export function poll(fileName, version, host = null, port = null) {
-	// Format request as JSON
-	const request = { name: 'poll', parameters: { fileName, version } }
-	// Send request
-	return sendData(JSON.stringify(request), host, port)
-		.catch(err => {
-			printError(`Poll request failed: ${err.message}`)
 		})
 }
 
