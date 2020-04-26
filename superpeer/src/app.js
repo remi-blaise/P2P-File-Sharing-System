@@ -29,11 +29,11 @@ function send(socket, response) {
 /**
  * Utility function, send an error through the socket and close the connection
  */
-function sendError(socket, exception = "") {
+function sendError(socket, exception = '') {
     console.log(`${BOLD}${RED}An error occurred:`, exception, RESET)
     send(socket, JSON.stringify({
         status: 'error',
-        message: typeof exception === 'string' ? exception : "Server error."
+        message: typeof exception === 'string' ? exception : 'Server error.'
     }))
 }
 
@@ -61,12 +61,12 @@ const server = net.createServer(socket => {
             var procedure = JSON.parse(message)
         }
         catch (exception) {
-            return sendError(socket, "Can't parse JSON.")
+            return sendError(socket, 'Can\'t parse JSON.')
         }
 
         // 3. Call the requested procedure
 
-        if (!(procedure.name in procedures)) return sendError(socket, "Wrong procedure name.")
+        if (!(procedure.name in procedures)) return sendError(socket, 'Wrong procedure name.')
 
         try {
             var data = await procedures[procedure.name](procedure.parameters)
@@ -96,4 +96,3 @@ server.on('error', err => {
 server.listen(config.port, () => {
     console.log(`${BOLD}${GREEN}Server is listening...${RESET}`)
 })
-

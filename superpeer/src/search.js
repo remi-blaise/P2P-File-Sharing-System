@@ -6,7 +6,7 @@
  * @author Rémi Blaise <hello@remi-blaise.com>
  */
 
-import { search, queryhit, invalidate, poll } from './interface'
+import { search, queryhit, invalidate } from './interface'
 import { retrieveFiles } from './repository'
 import config from './config'
 
@@ -14,7 +14,7 @@ import config from './config'
 function shuffle(array) {
     for (let i = array.length - 1; i > 0; i--) {
         let j = Math.floor(Math.random() * (i + 1)) // random index from 0 to i
-        ;[array[i], array[j]] = [array[j], array[i]]
+            ;[array[i], array[j]] = [array[j], array[i]]
     }
 }
 
@@ -24,7 +24,7 @@ export async function localSearch(messageId, fileName, ip, port) {
 
     // Send one `queryhit` request back to the peer
     files.forEach(file => {
-        const peers = [ ...file.peers ]
+        const peers = [...file.peers]
         shuffle(peers)
         file.peers.forEach(peer =>
             queryhit(ip, port, messageId, file.name, peer.ip, peer.port)
@@ -44,29 +44,7 @@ export async function propagateInvalidate(parameters) {
     )
 
     config.leafNodes.filter(leafnode => leafnode.ip != parameters.ip || leafnode.port != parameters.port)
-    .forEach(leafnode =>
-        invalidate(leafnode.ip, leafnode.port, parameters.messageId, parameters.fileName, parameters.version)
-    )
-}
-
-/**
- * Refresh one file
- * @param {Object} file - File Sequelize entity
- */
-async function refresh(file, leafIp, leafPort) {
-    const responses = (await Promise.all(
-        config.neighbors.map(neighbor => poll(neighbor.ip, neighbor.port, file.name, file.version))
-    ))
-    .map(({ outOfDate }) => outOfDate)
-
-    if (responses.some(item => item)) {
-        invalidate(leafIp, leafPort, 0, file.name, file.version)
-    } else {
-        // Set up timeout
-        setRefreshTimeout(file)
-    }
-}
-
-export function setRefreshTimeout(file, leafIp, leafPort) {
-    setTimeout(() => refresh(file, leafIp, leafPort), file.ttr * 1000) // Can elicit stack overflow?
+        .forEach(leafnode =>
+            invalidate(leafnode.ip, leafnode.port, parameters.messageId, parameters.fileName, parameters.version)
+        )
 }

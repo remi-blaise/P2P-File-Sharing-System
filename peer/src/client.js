@@ -79,7 +79,7 @@ export function start() {
 					}
 
 					// Invalidate request
-					if (config.strategy === 0 || config.strategy === 2) invalidate(await generateMessageID(), file.name, file.version)
+					invalidate(await generateMessageID(), file.name, file.version)
 				} else {
 					File.create({ name: filename, owned: true })
 						.catch(err => console.error(err))
@@ -121,7 +121,6 @@ async function showCLI() {
 	console.log(`\n${colors.BRIGHT}1.${colors.RESET} See the list of local files`)
 	console.log(`${colors.BRIGHT}2.${colors.RESET} Download a file`)
 	console.log(`${colors.BRIGHT}3.${colors.RESET} Exit program`)
-	if (config.strategy === 1) console.log(`${colors.BRIGHT}4.${colors.RESET} Refresh downloaded files`)
 
 	const answer = await ask('What do you want to do? ')
 
@@ -137,12 +136,6 @@ async function showCLI() {
 		case 3:
 			// 3. Exit program
 			process.exit()
-		case 4:
-			// 4. Refresh all files
-			if (config.strategy === 1) {
-				refreshAll()
-				break
-			}
 		default:
 			// Wrong input: ask again
 			showCLI()
@@ -278,8 +271,6 @@ async function downloadFile(file, i = 0) {
 					// Try next peer
 					downloadFile(file, i + 1)
 				} else {*/
-					// Set up timeout
-					if (config.strategy === 1) setRefreshTimeout(fileEntity)
 
 					console.log(`${colors.BRIGHT}${colors.FG_GREEN}File successfully downloaded!${colors.RESET}`)
 					// Back to menu
@@ -299,43 +290,6 @@ async function downloadFile(file, i = 0) {
 		// Back to menu
 		showCLI()
 	}
-}
-
-/**
- * Refresh one file
- * @param {Object} file - File Sequelize entity
- */
-async function refresh(file) {
-	const { upToDate, ttr, lastModifiedTime } = await poll(file.name, file.version, file.ip, file.port)
-
-	if (upToDate) {
-		// Save new ttr
-		[ file.ttr, file.lastModifiedTime ] = [ ttr, lastModifiedTime ]
-		await file.save()
-	}
-	else {
-		// Delete the entry in the database
-		await file.destroy()
-
-		// Download the new version
-		file = await retrieve(file.name, file.ip, file.port)
-	}
-
-	// Set up timeout
-	setRefreshTimeout(file)
-}
-
-function setRefreshTimeout(file) {
-	setTimeout(() => refresh(file), new Date(file.lastModifiedTime) - (-file.ttr * 1000) - new Date()) // Can elicit stack overflow?
-}
-
-async function refreshAll() {
-	await Promise.all(
-		repository.File.findAll({ where: { owned: false } }).map(refresh)
-	)
-
-	// Back to menu
-	showCLI()
 }
 
 export default { start, printError }

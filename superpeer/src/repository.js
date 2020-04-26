@@ -35,7 +35,7 @@ function logAllDatabase() {
     if (config.logAllDatabase) console.log(util.inspect(files, false, null, true))
 }
 
-Array.prototype.includesById = function(element) {
+Array.prototype.includesById = function (element) {
     return this.filter(e => e.name === element.name).length
 }
 

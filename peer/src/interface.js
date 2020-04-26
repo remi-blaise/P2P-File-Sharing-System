@@ -58,7 +58,7 @@ export async function registry(host, port, files) {
 	// Format request as JSON
 	const request = { name: 'registry', parameters: { ip: host, port: port, files: files } }
 	// Read keys
-	try {
+	/* try {
 		const privateKey = await fs.readFile(privateKeyFilename)
 		// Sign request
 		const sign = crypto.createSign('SHA256')
@@ -73,7 +73,7 @@ export async function registry(host, port, files) {
 			})
 	} catch (e) {
 		printError('One of your keys is missing, please execute `npm run generate-keys` to generate your keys', true)
-	}
+	} */
 }
 
 /**

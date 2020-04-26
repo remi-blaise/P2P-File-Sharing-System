@@ -1,7 +1,6 @@
 import net from 'net'
 import fs from 'promise-fs'
 import path from 'path'
-import { read } from './files'
 import { printError } from './client'
 import repository from './repository'
 import config from './config'
@@ -63,34 +62,6 @@ const server = net.createServer(socket => {
 					socket.write(JSON.stringify({ status: 'success', data: null }))
 				} else {
 					console.log(`${colors.FG_RED}Received invalid paramers${colors.RESET}`, request.parameters)
-					socket.write(JSON.stringify({ status: 'error', message: 'Invalid parameters' }))
-				}
-			} else if (request.name === 'poll') {
-				if (config.strategy !== 1) {
-					console.log(`${colors.FG_RED}Set strategy to ${colors.RESET}`)
-					socket.write(JSON.stringify({ status: 'error', message: 'Unknown file, it may have been deleted?' }))
-				}
-
-				if (request.parameters.fileName != undefined && request.parameters.version != undefined) {
-					let file
-					try {
-						file = await repository.File.findOne({ where: { name: request.parameters.fileName } })
-					} catch (err) {
-						console.log(`${colors.FG_RED}Error reading database${colors.RESET}`)
-						socket.write(JSON.stringify({ status: 'error', message: 'Error reading database$' }))
-						return
-					}
-					if (file === null) {
-						console.log(`${colors.FG_RED}Unknown file${colors.RESET}`)
-						socket.write(JSON.stringify({ status: 'error', message: 'Unknown file, it may have been deleted?' }))
-					}
-					socket.write(JSON.stringify({ status: 'success', data: {
-						upToDate: file.version === request.parameters.version,
-						ttr: config.ttr,
-						lastModifiedTime: (new Date()).toISOString(),
-					} }))
-				} else {
-					console.log(`${colors.FG_RED}Received invalid paramers: ${colors.RESET}`, request.parameters)
 					socket.write(JSON.stringify({ status: 'error', message: 'Invalid parameters' }))
 				}
 			}

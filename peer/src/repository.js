@@ -30,19 +30,9 @@ const File = sequelize.define('file', {
     port: {
         type: Sequelize.NUMBER
     },
-
-    // Specific to strategy 0, peer-client
     valid: {
         type: Sequelize.BOOLEAN
-    },
-
-    // Specific to strategy 1 and 2, peer-client
-    ttr: {
-        type: Sequelize.NUMBER
-    },
-    lastModifiedTime: {
-        type: Sequelize.STRING
-    },
+    }
 })
 
 sequelize.sync()

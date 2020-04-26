@@ -11,7 +11,7 @@ const SP_SRC_DIR = '../superpeer'
 const LN_SRC_DIR = '../peer'
 const IP_ADDR = ip.address()
 
-async function createSuperPeers(number, leafNodes, topology, strategy, ttr) {
+async function createSuperPeers(number, leafNodes, topology) {
 	var superPeers = []
 
 	for (let i = 0; i < number; i++) {
@@ -26,9 +26,7 @@ async function createSuperPeers(number, leafNodes, topology, strategy, ttr) {
 		for (let j = 0; j < leafNodes; j++) {
 			portCounter++
 			process.stdout.write(`Leaf node #${j + 1}... `)
-			await createLeafNode(`${i}${j}`, portCounter, superPeerPort, strategy, ttr)
-			// Copy public key to super-peer
-			fs.copyFileSync(path.join(TARGET_DIR, `leafnode${i}${j}`, 'keys', 'publicKey.pem'), path.join(superPeerPath, 'keys', `${j}.pem`))
+			await createLeafNode(`${i}${j}`, portCounter, superPeerPort)
 			peers.push({ ip: IP_ADDR, port: portCounter })
 			console.log(`${colors.BRIGHT}${colors.FG_GREEN}Done!${colors.RESET}`)
 		}
@@ -40,8 +38,6 @@ async function createSuperPeers(number, leafNodes, topology, strategy, ttr) {
 		let config = JSON.parse(fs.readFileSync(path.join(superPeerPath, 'config.json.dist')))
 		config.port = superPeerPort
 		config.leafNodes = peers
-		config.strategy = strategy
-		config.ttr = strategy === 2 ? ttr : undefined
 		fs.writeFileSync(path.join(superPeerPath, 'config.json'), JSON.stringify(config, null, '\t'))
 
 		// Install dependencies
@@ -77,7 +73,7 @@ async function createSuperPeers(number, leafNodes, topology, strategy, ttr) {
 	console.log(`${colors.BRIGHT}${colors.FG_GREEN}Done!${colors.RESET}`)
 }
 
-async function createLeafNode(index, port, superPeerPort, strategy, ttr) {
+async function createLeafNode(index, port, superPeerPort) {
 	const leafNodePath = path.join(TARGET_DIR, `leafnode${index}`)
 
 	copyFolderRecursive(LN_SRC_DIR, leafNodePath)
@@ -88,13 +84,7 @@ async function createLeafNode(index, port, superPeerPort, strategy, ttr) {
 	config.indexHost = '127.0.0.1'
 	config.indexPort = superPeerPort
 	config.port = port
-	config.strategy = strategy
-	config.ttr = ttr
 	fs.writeFileSync(path.join(leafNodePath, 'config.json'), JSON.stringify(config, null, '\t'))
-
-	// Generate keys
-	process.stdout.write('Generating keys... ')
-	await promisify(exec)(`cd ${leafNodePath} && npm run generate-keys`)
 
 	// Install dependencies
 	process.stdout.write('Installing dependencies... ')
@@ -113,15 +103,6 @@ async function main() {
 	const rawTopology = parseInt(await ask('Topology: (1) '))
 	const topology = rawTopology == 2 ? 2 : 1
 
-	console.log('Which consistency strategy do you want?')
-	console.log('0. The push-based approach')
-	console.log('1. The pull-based approach with leaf-node cache')
-	console.log('2. The pull-based approach with super-peer cache')
-	const rawStrategy = parseInt(await ask('Strategy: (0) '))
-	const strategy = (rawStrategy == 2 || rawStrategy == 1) ? rawStrategy : 0
-
-	const ttr = (strategy >= 1) ? parseInt(await ask('Choose the time-to-refresh (sec): (60) ')) || 60 : undefined
-
 	// Clean target directory
 	process.stdout.write('\nCleaning old peers... ')
 	if (fs.existsSync(TARGET_DIR)) {
@@ -130,7 +111,7 @@ async function main() {
 	fs.mkdirSync(TARGET_DIR)
 	console.log(`${colors.BRIGHT}${colors.FG_GREEN}Done!${colors.RESET}`)
 
-	await createSuperPeers(superPeers, leafNodes, topology, strategy, ttr)
+	await createSuperPeers(superPeers, leafNodes, topology)
 
 	console.log('\nBye!')
 	process.exit()

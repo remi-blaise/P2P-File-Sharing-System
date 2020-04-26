@@ -1,7 +1,6 @@
 {
     "port": 8080,
     "keyStorageDir": "keys",
-    "enableSignatureChecks": true,
     "logAllDatabase": true,
     "queryLifetime": 1000,
     "leafNodes": [
@@ -15,7 +14,5 @@
             "ip": "X.X.X.X",
             "port": 1234
         }
-    ],
-    "strategy": 0,
-    "ttr": 60
+    ]
 }

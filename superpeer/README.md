@@ -18,7 +18,6 @@ Do at least once:
 Config keys:
 - `port`: the port is server will be listening on.
 - `keyStorageDir`: directory where to store client public keys, requires write access.
-- `enableSignatureChecks`: enable peer identity checks, recommended.
 - `logAllDatabase`: display the full content of the database after each non-idempotent request. Not recommended for performance.
 
 ## Start the software
@@ -37,7 +36,7 @@ You can use the dump client to test the software. This client allow you to manua
 npm run dump-client
 ```
 
-Refer to the Design Document to know about the protocol format. Here are example data you can use (you need to turn `enableSignatureChecks` to `false` as these requests don't include signatures):
+Refer to the Design Document to know about the protocol format. Here are example data you can use:
 
 ```json
 // Register a first peer server
