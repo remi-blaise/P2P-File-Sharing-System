@@ -7,7 +7,6 @@
  * @author Rémi Blaise <hello@remi-blaise.com>
  */
 
-import { isPort, isIP } from 'validator'
 import config from './config'
 import { registerPeer, logMessage, getMessageSender, flushMessages } from './repository'
 import { localSearch, propagateSearch, propagateInvalidate } from './search'
@@ -138,6 +137,8 @@ async function search(parameters) {
 async function queryhit(parameters) {
     // 1. Validate parameters
 
+    checkForParameter('id', parameters)
+    if (typeof parameters.id !== 'string') throw "id should be a string."
     checkForParameter('messageId', parameters)
     if (typeof parameters.messageId !== 'string') throw "messageId should be a string."
     checkForParameter('fileName', parameters)
@@ -168,16 +169,14 @@ async function queryhit(parameters) {
 function invalidate(parameters) {
     // 1. Validate parameters
 
+    checkForParameter('id', parameters)
+    if (typeof parameters.id !== 'string') throw "id should be a string."
     checkForParameter('messageId', parameters)
     if (typeof parameters.messageId !== 'string') throw "messageId should be a string."
     checkForParameter('fileName', parameters)
     if (typeof parameters.fileName !== 'string') throw "fileName should be a string."
     checkForParameter('version', parameters)
     if (typeof parameters.version !== 'number') throw "version should be a number."
-    checkForParameter('ip', parameters)
-    if (typeof parameters.ip !== 'string') throw "ip should be a string."
-    checkForParameter('port', parameters)
-    if (typeof parameters.port !== 'number') throw "port should be a number."
 
     // 2. Ignore if the message was already received
 
@@ -185,9 +184,13 @@ function invalidate(parameters) {
         return null
     }
 
+    const idArr = parameters.id.split(':')
+    const ip = idArr[0]
+    const port = parseInt(idArr[1])
+
     // 3. Log the message
 
-    logMessage(parameters.messageId, parameters.ip, parameters.port)
+    logMessage(parameters.messageId, ip, port)
 
     // 4. Propagate request
 

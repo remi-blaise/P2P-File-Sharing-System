@@ -9,39 +9,63 @@
 import { Socket } from 'net'
 import { RESET, BOLD, RED, GREEN, BLUE } from './colors'
 import ip from 'ip'
+import rsa from './rsa/rsa'
 import config from './config'
+import keystore from './keystore'
+import { pemPublicKey, readPrivateKey } from './rsa/rsa-keypair'
+
+const id = ip.address() + ':' + config.port
 
 /**
  * Send data to another peer
  * @param {string} host - Host name
  * @param {number} port - Port
  * @param {string} data - Data to be send
+ * @param {boolean} encrypted - Specify if the request has to be encrypted
  * @returns {Promise} Server response
  */
-function sendData(host, port, data) {
+function sendData(host, port, data, encrypted = true) {
 	// Create connection
 	const client = new Socket()
 	client.connect(port, host)
 
 	// Wait for response
 	return new Promise((resolve, reject) => {
-		// Send request
-		client.write(data, err => {
-			if (err) {
-				console.log(`${BOLD}${RED}An error occured while sending data to the peer:`, err.message, RESET)
-				reject(err)
-			}
-		})
-		console.log(`${BOLD}${GREEN}Request sent:${RESET}${BLUE}`, data, RESET)
+		if (encrypted) {
+			// Encrypt message using RSA
+			const key = rsa.importKey(keystore.getKey(`${host}:${port}`))
+			console.log(`${BOLD}${GREEN}Request sent:${RESET}${BLUE}`, data, RESET)
+			const cypher = rsa.encryptText(data, key)
+			if (config.debugRSA) console.log('Cyphertext:', cypher)
+			// Send request
+			client.write(cypher, err => {
+				if (err) {
+					console.log(`${BOLD}${RED}An error occured while sending data to the peer:`, err.message, RESET)
+					reject(err)
+				}
+			})
+		} else {
+			// Plain text message
+			// Send request
+			client.write(data, err => {
+				if (err) {
+					console.log(`${BOLD}${RED}An error occured while sending data to the peer:`, err.message, RESET)
+					reject(err)
+				}
+			})
+			console.log(`${BOLD}${GREEN}Request sent:${RESET}${BLUE}`, data, RESET)
+		}
 
 		client.on('error', err => {
 			err = new Error(`Cannot connect to the server (${err.code})`)
 			console.log(`${BOLD}${RED}An error occured while sending data to the peer:`, err.message, RESET)
 			reject(err)
 		})
-		client.on('data', data => {
+		client.on('data', async data => {
 			try {
-				const response = JSON.parse(data.toString())
+				if (config.debugRSA) console.log('Encrypted response:', data.toString())
+				const key = await readPrivateKey()
+				const response = JSON.parse(rsa.decryptText(data.toString(), key))
 				if (response.status == 'success') {
 					console.log(`${BOLD}${GREEN}Response received:${RESET}${BLUE}`, response.data, RESET)
 					resolve(response.data)
@@ -59,6 +83,22 @@ function sendData(host, port, data) {
 }
 
 /**
+ * Share public key with another peer
+ * @param {string} host - Host name
+ * @param {number} port - Port
+ */
+export async function shareKey(host, port) {
+	const key = await pemPublicKey()
+	// Format request as JSON
+	const request = { name: 'pks', parameters: { id, key } }
+	// Send request
+	return sendData(host, port, JSON.stringify(request), false)
+		.then(data => {
+			keystore.setKey(`${host}:${port}`, data)
+		})
+}
+
+/**
  * Search for a file on the index server
  * @param {string} host - Host name
  * @param {number} port - Port
@@ -68,7 +108,7 @@ function sendData(host, port, data) {
  */
 export function search(host, port, messageId, ttl, fileName) {
 	// Format request as JSON
-	const request = { name: 'search', parameters: { messageId, ttl, fileName, ip: ip.address(), port: config.port } }
+	const request = { name: 'search', parameters: { id, messageId, ttl, fileName } }
 	// Send request
 	return sendData(host, port, JSON.stringify(request))
 }
@@ -86,7 +126,7 @@ export function search(host, port, messageId, ttl, fileName) {
  */
 export function queryhit(host, port, messageId, fileName, peerIp, peerPort) {
 	// Format request as JSON
-	const request = { name: 'queryhit', parameters: { messageId, fileName, ip: peerIp, port: peerPort } }
+	const request = { name: 'queryhit', parameters: { id, messageId, fileName, ip: peerIp, port: peerPort } }
 	// Send request
 	return sendData(host, port, JSON.stringify(request))
 }
@@ -101,7 +141,7 @@ export function queryhit(host, port, messageId, fileName, peerIp, peerPort) {
  */
 export function invalidate(host, port, messageId, fileName, version) {
 	// Format request as JSON
-	const request = { name: 'invalidate', parameters: { messageId, ip: ip.address(), port: config.port, fileName, version } }
+	const request = { name: 'invalidate', parameters: { id, messageId, fileName, version } }
 	// Send request
 	return sendData(host, port, JSON.stringify(request))
 }

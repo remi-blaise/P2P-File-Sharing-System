@@ -5,15 +5,36 @@ import { printError } from './client'
 import repository from './repository'
 import config from './config'
 import colors from './colors'
+import rsa from './rsa/rsa'
+import keystore from './keystore'
+import { readPrivateKey } from './rsa/rsa-keypair'
 
 export var queryhits = {}
+
+// Utility function
+function send(socket, response, id) {
+    if (id === undefined || keystore.getKey(id) === undefined) {
+        // Send plain text message (key missing)
+        socket.write(response)
+    } else {
+        // Send encrypted message
+        const key = rsa.importKey(keystore.getKey(id))
+        const cypher = rsa.encryptText(response, key)
+		socket.write(cypher)
+		if (config.debugRSA) console.log('Cyphertext:', cypher)
+    }
+}
 
 // Create server
 const server = net.createServer(socket => {
 	socket.on('data', async data => {
 		try {
+			const key = await readPrivateKey()
+			if (config.debugRSA) console.log('Received encrypted message:', data.toString())
+			const message = rsa.decryptText(data.toString(), key)
+			if (config.debugRSA) console.log('Decrypted message:', message)
 			// Parse request
-			const request = JSON.parse(data.toString())
+			const request = JSON.parse(message)
 			// Identify retrieve request
 			if (request.name === 'retrieve') {
 				repository.File.findOne({ where: { name: request.parameters.fileName, owned: true } })
@@ -21,11 +42,10 @@ const server = net.createServer(socket => {
 						if (file == null) {
 							// File not found
 							const request = { statut: 'error', message: 'File requested not found' }
-							socket.write(JSON.stringify(request))
+							send(socket, JSON.stringify(request), request.parameters.id)
 						} else {
 							console.log(`${colors.FG_MAGENTA}File requested: ${colors.FG_CYAN}${file.name}${colors.RESET}`)
 							// Send requested file
-							const serverAddress = server.address()
 							socket.write(JSON.stringify({ status: 'success', data: {
 								filename: file.name,
 								version: file.version,
@@ -44,10 +64,10 @@ const server = net.createServer(socket => {
 					} else {
 						queryhits[request.parameters.messageId] = [hit]
 					}
-					socket.write(JSON.stringify({ status: 'success', data: null }))
+					send(socket, JSON.stringify({ status: 'success', data: null }), request.parameters.id)
 				} else {
 					console.log(`${colors.FG_RED}Received invalid paramers${colors.RESET}`, request.parameters)
-					socket.write(JSON.stringify({ status: 'error', message: 'Invalid parameters' }))
+					send(socket, JSON.stringify({ status: 'error', message: 'Invalid parameters' }), request.parameters.id)
 				}
 			} else if (request.name === 'invalidate') {
 				if (request.parameters.messageId != undefined && request.parameters.fileName != undefined && request.parameters.version != undefined && request.parameters.ip != undefined && request.parameters.port != undefined) {
@@ -59,10 +79,10 @@ const server = net.createServer(socket => {
 							}
 						})
 						.catch(err => console.error(err))
-					socket.write(JSON.stringify({ status: 'success', data: null }))
+						send(socket, JSON.stringify({ status: 'success', data: null }), request.parameters.id)
 				} else {
 					console.log(`${colors.FG_RED}Received invalid paramers${colors.RESET}`, request.parameters)
-					socket.write(JSON.stringify({ status: 'error', message: 'Invalid parameters' }))
+					send(socket, JSON.stringify({ status: 'error', message: 'Invalid parameters' }), request.parameters.id)
 				}
 			}
 		} catch (err) {

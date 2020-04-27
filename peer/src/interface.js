@@ -15,6 +15,9 @@ const id = ip.address() + ':' + config.port
 /**
  * Send data to the index server
  * @param {string} data - Data to be send
+ * @param {boolean} encrypted - Specify if the request has to be encrypted
+ * @param {string} host - Host name
+ * @param {number} port - Port
  * @returns {Promise} Server response
  */
 function sendData(data, encrypted = true, host = config.indexHost, port = config.indexPort) {
@@ -72,6 +75,9 @@ function sendData(data, encrypted = true, host = config.indexHost, port = config
 	})
 }
 
+/**
+ * Share public key with superpeer
+ */
 export async function shareKey() {
 	const key = await pemPublicKey()
 	// Format request as JSON
@@ -125,7 +131,7 @@ export function search(messageId, fileName) {
  */
 export function invalidate(messageId, fileName, version) {
 	// Format request as JSON
-	const request = { name: 'invalidate', parameters: { id, messageId, fileName, version, ip: ip.address(), port: config.port } }
+	const request = { name: 'invalidate', parameters: { id, messageId, fileName, version } }
 	// Send request
 	return sendData(JSON.stringify(request))
 		.catch(err => {
