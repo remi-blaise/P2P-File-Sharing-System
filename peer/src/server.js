@@ -13,6 +13,7 @@ export var queryhits = {}
 
 // Utility function
 function send(socket, response, id) {
+	if (config.debugRSA) console.log('Plain text response:', response)
     if (id === undefined || keystore.getKey(id) === undefined) {
         // Send plain text message (key missing)
         socket.write(response)
@@ -48,17 +49,16 @@ const server = net.createServer(socket => {
 							// Send requested file
 							socket.write(JSON.stringify({ status: 'success', data: {
 								filename: file.name,
-								version: file.version,
-								ttr: config.ttr,
-								lastModifiedTime: (new Date()).toISOString(),
+								version: file.version
 							} }) + ';')
 							const stream = fs.createReadStream(path.join(config.sharedDir, file.name))
 							stream.pipe(socket)
 						}
 					})
 			} else if (request.name === 'queryhit') {
-				if (request.parameters.messageId != undefined && request.parameters.fileName != undefined && request.parameters.ip != undefined && request.parameters.port != undefined) {
+				if (request.parameters.messageId != undefined && request.parameters.fileName != undefined && request.parameters.ip != undefined && request.parameters.port != undefined && request.parameters.key != undefined) {
 					const hit = { fileName: request.parameters.fileName, ip: request.parameters.ip, port: request.parameters.port }
+					keystore.setKey(`${request.parameters.ip}:${request.parameters.port}`, request.parameters.key)
 					if (queryhits.hasOwnProperty(request.parameters.messageId)) {
 						queryhits[request.parameters.messageId].push(hit)
 					} else {
@@ -70,7 +70,7 @@ const server = net.createServer(socket => {
 					send(socket, JSON.stringify({ status: 'error', message: 'Invalid parameters' }), request.parameters.id)
 				}
 			} else if (request.name === 'invalidate') {
-				if (request.parameters.messageId != undefined && request.parameters.fileName != undefined && request.parameters.version != undefined && request.parameters.ip != undefined && request.parameters.port != undefined) {
+				if (request.parameters.messageId != undefined && request.parameters.fileName != undefined && request.parameters.version != undefined) {
 					repository.File.findOne({ where: { name: request.parameters.fileName } })
 						.then(file => {
 							if (file != null) {

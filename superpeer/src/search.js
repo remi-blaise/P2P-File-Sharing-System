@@ -19,7 +19,7 @@ function shuffle(array) {
     }
 }
 
-export async function localSearch(messageId, fileName, ip, port) {
+export async function localSearch(messageId, fileName, ip, port, key) {
     // Search locally
     const files = await retrieveFiles(fileName)
 
@@ -28,7 +28,7 @@ export async function localSearch(messageId, fileName, ip, port) {
         const peers = [...file.peers]
         shuffle(peers)
         file.peers.forEach(peer =>
-            queryhit(ip, port, messageId, file.name, peer.ip, peer.port)
+            queryhit(ip, port, messageId, file.name, peer.ip, peer.port, keystore.getKey(`${peer.ip}:${peer.port}`))
         )
     })
 }

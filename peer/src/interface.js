@@ -85,7 +85,9 @@ export async function shareKey() {
 	// Send request
 	sendData(JSON.stringify(request), false)
 		.then(data => {
-			keystore.setKey(`${config.indexHost}:${config.indexPort}`, data)
+			// Small hack for super-peer on localhost
+			keystore.setKey(`${config.indexHost}:${config.indexPort}`, data.key)
+			keystore.setKey(data.id, data.key)
 		})
 		.catch(err => {
 			printError(`Registry request failed: ${err.message}`)
@@ -149,9 +151,15 @@ export function retrieve(file, host, port) {
 	// Create connection
 	const socket = new Socket()
 	socket.connect(port, host)
-	// Send request
+	// Prepare request
 	const request = { name: 'retrieve', parameters: { fileName: file } }
-	socket.write(JSON.stringify(request), err => {
+	// Encrypt message using RSA
+	const key = rsa.importKey(keystore.getKey(`${host}:${port}`))
+	if (config.debugRSA) console.log('Plain text message:', request)
+	const cypher = rsa.encryptText(JSON.stringify(request), key)
+	if (config.debugRSA) console.log('Cyphertext:', cypher)
+	// Send request
+	socket.write(cypher, err => {
 		if (err) {
 			printError(`Failed to send data to the peer (${err.code})`)
 		}

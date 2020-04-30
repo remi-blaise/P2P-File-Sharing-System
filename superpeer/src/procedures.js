@@ -7,6 +7,7 @@
  * @author Rémi Blaise <hello@remi-blaise.com>
  */
 
+import ip from 'ip'
 import config from './config'
 import { registerPeer, logMessage, getMessageSender, flushMessages } from './repository'
 import { localSearch, propagateSearch, propagateInvalidate } from './search'
@@ -39,7 +40,7 @@ async function pks(parameters) {
 
     // 3. Reply with public key
 
-    return pemPublicKey()
+    return { id: `${ip.address()}:${config.port}`, key: (await pemPublicKey()) }
 }
 
 /**
@@ -147,6 +148,8 @@ async function queryhit(parameters) {
     if (typeof parameters.ip !== 'string') throw "ip should be a string."
     checkForParameter('port', parameters)
     if (typeof parameters.port !== 'number') throw "port should be a number."
+    checkForParameter('key', parameters)
+    if (typeof parameters.key !== 'string') throw "key should be a string."
 
     // 2. Search for original message
 
@@ -155,7 +158,7 @@ async function queryhit(parameters) {
     // 3. Backpropagate
 
     if (sender !== undefined) {
-        clientQueryhit(sender.ip, sender.port, parameters.messageId, parameters.fileName, parameters.ip, parameters.port)
+        clientQueryhit(sender.ip, sender.port, parameters.messageId, parameters.fileName, parameters.ip, parameters.port, parameters.key)
     }
 
     return null

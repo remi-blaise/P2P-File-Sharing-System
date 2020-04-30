@@ -94,7 +94,7 @@ export async function shareKey(host, port) {
 	// Send request
 	return sendData(host, port, JSON.stringify(request), false)
 		.then(data => {
-			keystore.setKey(`${host}:${port}`, data)
+			keystore.setKey(data.id, data.key)
 		})
 }
 
@@ -104,7 +104,7 @@ export async function shareKey(host, port) {
  * @param {number} port - Port
  * @param {string} messageId - ID of the message
  * @param {number} ttl - TTL (time-to-live) of the request
- * @param {string} filename - Name of the file to search for
+ * @param {string} fileName - Name of the file to search for
  */
 export function search(host, port, messageId, ttl, fileName) {
 	// Format request as JSON
@@ -117,16 +117,15 @@ export function search(host, port, messageId, ttl, fileName) {
  * Send a queryhit
  * @param {string} host - Host name
  * @param {number} port - Port
- * @param {string} fileId - ID of the file
- * @param {string} fileHash - Hash of the file
+ * @param {string} messageId - ID of the message
  * @param {string} fileName - Name of the file
- * @param {number} fileSize - Size of the file
  * @param {string} peerIp - IP of the peer
  * @param {number} peerPort - Port of the peer
+ * @param {number} peerKey - Public key of the peer
  */
-export function queryhit(host, port, messageId, fileName, peerIp, peerPort) {
+export function queryhit(host, port, messageId, fileName, peerIp, peerPort, peerKey) {
 	// Format request as JSON
-	const request = { name: 'queryhit', parameters: { id, messageId, fileName, ip: peerIp, port: peerPort } }
+	const request = { name: 'queryhit', parameters: { id, messageId, fileName, ip: peerIp, port: peerPort, key: peerKey } }
 	// Send request
 	return sendData(host, port, JSON.stringify(request))
 }
