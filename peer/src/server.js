@@ -47,12 +47,21 @@ const server = net.createServer(socket => {
 						} else {
 							console.log(`${colors.FG_MAGENTA}File requested: ${colors.FG_CYAN}${file.name}${colors.RESET}`)
 							// Send requested file
-							socket.write(JSON.stringify({ status: 'success', data: {
+							// 1. JSON header
+							const pubKey = rsa.importKey(request.parameters.key)
+							const response = JSON.stringify({ status: 'success', data: {
 								filename: file.name,
 								version: file.version
-							} }) + ';')
+							} }) + ';'
+							const cypher = rsa.encryptText(response, pubKey)
+							socket.write(cypher)
+							if (config.debugRSA) console.log('Cyphertext:', cypher)
+							// 2. Data stream
 							const stream = fs.createReadStream(path.join(config.sharedDir, file.name))
-							stream.pipe(socket)
+							stream.on('data', chunk => {
+								socket.write(rsa.encryptText(chunk.toString(), pubKey))
+							})
+							stream.on('close', () => socket.destroy())
 						}
 					})
 			} else if (request.name === 'queryhit') {

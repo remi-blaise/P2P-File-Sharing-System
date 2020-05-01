@@ -147,12 +147,12 @@ export function invalidate(messageId, fileName, version) {
  * @param {string} host - Hostname of the peer
  * @param {number} port - Port of the peer
  */
-export function retrieve(file, host, port) {
+export async function retrieve(file, host, port) {
 	// Create connection
 	const socket = new Socket()
 	socket.connect(port, host)
 	// Prepare request
-	const request = { name: 'retrieve', parameters: { fileName: file } }
+	const request = { name: 'retrieve', parameters: { fileName: file, key: (await pemPublicKey()) } }
 	// Encrypt message using RSA
 	const key = rsa.importKey(keystore.getKey(`${host}:${port}`))
 	if (config.debugRSA) console.log('Plain text message:', request)
@@ -172,10 +172,15 @@ export function retrieve(file, host, port) {
 			data += chunk.toString()
 		})
 		socket.on('end', async () => {
+			// Decode message
+			if (config.debugRSA) console.log('Encrypted response:', data)
+			const key = await readPrivateKey()
+			const message = rsa.decryptText(data, key)
+			if (config.debugRSA) console.log('Decrypted response:', message)
 			// Separate JSON response from file data stream
-			const separatorIndex = data.indexOf(';')
-			const header = data.substring(0, separatorIndex)
-			const content = data.substring(separatorIndex + 1)
+			const separatorIndex = message.indexOf(';')
+			const header = message.substring(0, separatorIndex)
+			const content = message.substring(separatorIndex + 1)
 			// Read JSON response
 			try {
 				const response = JSON.parse(header)
@@ -189,17 +194,11 @@ export function retrieve(file, host, port) {
 						owned: false,
 						valid: true,
 						ip: host,
-						port,
-						ttr: response.data.ttr,
-						lastModifiedTime: response.data.lastModifiedTime,
+						port
 					})
 					// Write content to file
 					const dest = fs.createWriteStream(path.join(config.downloadDir, filename))
-
-					dest.write(content, () => {
-						socket.destroy()
-						resolve(file)
-					})
+					dest.write(content, () => resolve(file))
 				} else {
 					const err = new Error(response.message || 'Unkown error')
 					reject(err)
